@@ -1,12 +1,15 @@
-// Mini CRM • Nasiya & Tölovlar — Vanilla JS
+// Mini CRM • Nasiya & Tölovlar — Secure Viewer Mode
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 
 const storeKey = 'nasiya-crm-v1';
+const pinKey  = 'nasiya-crm-pin';
+const lockKey = 'nasiya-crm-locked';
 
 let db = load();
-
 let deferredInstallPrompt = null;
+let isLocked = JSON.parse(localStorage.getItem(lockKey) ?? 'true'); // default qulflangan
+let currentClientId = null;
 
 // ---------- Utils ----------
 function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
@@ -22,7 +25,7 @@ function fmtDate(d){
   return dt.toLocaleDateString('uz-UZ');
 }
 function sanitizePhone(v){
-  v = (v||'').replace(/[^\d+]/g,'');
+  v = (v||'').replace(/[^\\d+]/g,'');
   if(v && !v.startsWith('+')) v = '+998' + v;
   return v;
 }
@@ -36,6 +39,50 @@ function save(){
 }
 function nowISO(){ return new Date().toISOString().slice(0,10); }
 
+// ---------- PIN / Lock helpers ----------
+async function sha256(str){
+  const enc = new TextEncoder().encode(str);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function checkPin(pin){
+  const saved = localStorage.getItem(pinKey);
+  if(!saved) return false;
+  return (await sha256(pin)) === saved;
+}
+async function setPin(pin){ localStorage.setItem(pinKey, await sha256(pin)); }
+
+function updateLockUI(){
+  document.body.classList.toggle('locked', isLocked);
+  $('#lockState').textContent = isLocked ? '🔒 Qulf' : '🔓 Admin';
+  $$('.admin-only').forEach(el => el.style.display = isLocked ? 'none' : '');
+}
+updateLockUI();
+
+$('#lockBtn').addEventListener('click', async () => {
+  if(isLocked){
+    const saved = localStorage.getItem(pinKey);
+    if(!saved){
+      const p1 = prompt('Yangi ADMIN PIN kiriting (kamida 4 raqam):');
+      if(!p1 || p1.length < 4) return alert('Kamida 4 raqam bo‘lsin.');
+      const p2 = prompt('PINni tasdiqlang:');
+      if(p1 !== p2) return alert('PIN mos kelmadi.');
+      await setPin(p1);
+      isLocked = false;
+    } else {
+      const pin = prompt('ADMIN PIN:');
+      if(!pin) return;
+      if(!(await checkPin(pin))) return alert('Noto‘g‘ri PIN.');
+      isLocked = false;
+    }
+  } else {
+    isLocked = true;
+  }
+  localStorage.setItem(lockKey, JSON.stringify(isLocked));
+  updateLockUI();
+  render();
+});
+
 // ---------- Rendering ----------
 function computeTotals(){
   let totalDebt = 0, totalPaid = 0;
@@ -48,13 +95,11 @@ function computeTotals(){
 }
 
 function render(){
-  // totals
   const {totalDebt,totalPaid,totalLeft} = computeTotals();
   $('#totalDebt').textContent = money(totalDebt);
   $('#totalPaid').textContent = money(totalPaid);
   $('#totalLeft').textContent = money(totalLeft);
 
-  // table
   const tbody = $('#clientTable tbody');
   tbody.innerHTML = '';
   const q = ($('#search').value || '').toLowerCase();
@@ -80,17 +125,35 @@ function render(){
         <td></td>
       `;
       const cell = tr.lastElementChild;
-      const tpl = document.getElementById('rowActions');
-      cell.appendChild(tpl.content.cloneNode(true));
-      cell.querySelector('[data-view]').addEventListener('click', () => openClientDetail(c.id));
-      cell.querySelector('[data-remove]').addEventListener('click', () => removeClient(c.id));
+      if(!isLocked){
+        const tpl = document.getElementById('rowActions');
+        cell.appendChild(tpl.content.cloneNode(true));
+        cell.querySelector('[data-view]').addEventListener('click', () => openClientDetail(c.id));
+        cell.querySelector('[data-remove]').addEventListener('click', () => removeClient(c.id));
+      }else{
+        const btn = document.createElement('button');
+        btn.className = 'chip';
+        btn.textContent = 'Ko‘rish';
+        btn.addEventListener('click', () => openClientDetail(c.id));
+        cell.appendChild(btn);
+      }
       tbody.appendChild(tr);
     });
 }
 
 // ---------- Clients ----------
-$('#newClientBtn').addEventListener('click', () => openClientForm());
+$('#newClientBtn')?.addEventListener('click', () => {
+  if(isLocked) return alert('Admin rejimi yoqilmagan.');
+  openClientForm();
+});
 $('#search').addEventListener('input', render);
+$('#viewByPhoneBtn').addEventListener('click', () => {
+  const p = sanitizePhone($('#phoneLookup').value.trim());
+  if(!p) return;
+  const c = db.clients.find(x => sanitizePhone(x.phone) === p);
+  if(!c) return alert('Bu telefon raqami bo‘yicha mijoz topilmadi.');
+  openClientDetail(c.id);
+});
 
 function openClientForm(id=null){
   const modal = $('#clientModal');
@@ -106,16 +169,19 @@ function openClientForm(id=null){
     $('#c_phone').value = c.phone || '';
     $('#c_note').value = c.note || '';
     $('#deleteClientBtn').hidden = false;
-    $('#deleteClientBtn').onclick = () => { if(confirm('Ushbu mijoz o‘chirilsinmi?')) { removeClient(id); modal.close(); } };
+    $('#deleteClientBtn').onclick = () => { 
+      if(isLocked) return alert('Admin rejimi yoqilmagan.');
+      if(confirm('Ushbu mijoz o‘chirilsinmi?')) { removeClient(id); modal.close(); } 
+    };
   }
   modal.showModal();
 }
 
-$('[data-close]').addEventListener('click', e=> e.target.closest('dialog').close());
 $$('[data-close]').forEach(btn => btn.addEventListener('click', e=> e.target.closest('dialog').close()));
 
 $('#clientForm').addEventListener('submit', e => {
   e.preventDefault();
+  if(isLocked) return alert('Admin rejimi yoqilmagan.');
   const id = e.target.dataset.id || null;
   const name = $('#c_name').value.trim();
   const phone = sanitizePhone($('#c_phone').value.trim());
@@ -134,13 +200,12 @@ $('#clientForm').addEventListener('submit', e => {
 });
 
 function removeClient(id){
+  if(isLocked) return alert('Admin rejimi yoqilmagan.');
   const i = db.clients.findIndex(x=>x.id===id);
   if(i>=0){ db.clients.splice(i,1); save(); }
 }
 
 // ---------- Client Detail & Transactions ----------
-let currentClientId = null;
-
 function openClientDetail(id){
   const c = db.clients.find(x=>x.id===id);
   if(!c) return;
@@ -161,6 +226,10 @@ function renderDetail(){
   $('#detailPaid').textContent = money(paid);
   $('#detailLeft').textContent = money(left);
 
+  // admin tugmalari ko'rinishi
+  $('#addDebtBtn').style.display = isLocked ? 'none' : 'inline-block';
+  $('#addPayBtn').style.display  = isLocked ? 'none' : 'inline-block';
+
   const tbody = $('#txnTable tbody');
   tbody.innerHTML = '';
   c.transactions
@@ -168,33 +237,45 @@ function renderDetail(){
     .sort((a,b)=> (b.date||'').localeCompare(a.date||''))
     .forEach((t, i) => {
       const tr = document.createElement('tr');
+      const isDebt = t.type === 'qarz';
       tr.innerHTML = `
         <td>${i+1}</td>
         <td>${fmtDate(t.date)}</td>
-        <td>${t.type==='qarz' ? 'Qarz (➕)' : 'Tölov (➖)'}</td>
-        <td>${money(t.amount)}</td>
+        <td><span class="badge ${isDebt ? 'debt' : 'pay'}">${isDebt ? 'Qarz (➕)' : 'Tölov (➖)'}</span></td>
+        <td class="amount ${isDebt ? 'debt' : 'pay'}">${money(t.amount)}</td>
         <td>${t.note||''}</td>
-        <td><button class="chip warn" data-del="${t.id}">O‘chirish</button></td>
+        <td>${isLocked ? '' : '<button class="chip warn" data-del="'+t.id+'">O‘chirish</button>'}</td>
       `;
-      tr.querySelector('[data-del]').addEventListener('click', () => {
-        if(confirm('Tranzaksiyani o‘chirasizmi?')){
-          const idx = c.transactions.findIndex(x=>x.id===t.id);
-          if(idx>=0){ c.transactions.splice(idx,1); save(); renderDetail(); }
-        }
-      });
+      if(!isLocked){
+        tr.querySelector('[data-del]')?.addEventListener('click', () => {
+          if(confirm('Tranzaksiyani o‘chirasizmi?')){
+            const idx = c.transactions.findIndex(x=>x.id===t.id);
+            if(idx>=0){ c.transactions.splice(idx,1); save(); renderDetail(); }
+          }
+        });
+      }
       tbody.appendChild(tr);
     });
 }
 
-$('#addTxnBtn').addEventListener('click', () => {
+$('#addDebtBtn').addEventListener('click', () => {
+  if(isLocked) return alert('Admin rejimi yoqilmagan.');
   $('#txnForm').reset();
   $('#t_type').value = 'qarz';
+  $('#t_date').value = nowISO();
+  $('#txnModal').showModal();
+});
+$('#addPayBtn').addEventListener('click', () => {
+  if(isLocked) return alert('Admin rejimi yoqilmagan.');
+  $('#txnForm').reset();
+  $('#t_type').value = 'tolov';
   $('#t_date').value = nowISO();
   $('#txnModal').showModal();
 });
 
 $('#txnForm').addEventListener('submit', e => {
   e.preventDefault();
+  if(isLocked) return alert('Admin rejimi yoqilmagan.');
   const c = db.clients.find(x=>x.id===currentClientId);
   if(!c) return;
   const type = $('#t_type').value;
@@ -209,7 +290,8 @@ $('#txnForm').addEventListener('submit', e => {
 });
 
 // ---------- Export / Import ----------
-$('#exportBtn').addEventListener('click', () => {
+$('#exportBtn')?.addEventListener('click', () => {
+  if(isLocked) return alert('Admin rejimi yoqilmagan.');
   const blob = new Blob([JSON.stringify(db, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -217,7 +299,8 @@ $('#exportBtn').addEventListener('click', () => {
   a.click();
 });
 
-$('#importFile').addEventListener('change', async e => {
+$('#importFile')?.addEventListener('change', async e => {
+  if(isLocked){ e.target.value=''; return alert('Admin rejimi yoqilmagan.'); }
   const file = e.target.files[0];
   if(!file) return;
   const text = await file.text();
@@ -242,10 +325,10 @@ window.addEventListener('beforeinstallprompt', (e) => {
 $('#installBtn').addEventListener('click', async () => {
   if(deferredInstallPrompt){
     deferredInstallPrompt.prompt();
-    const res = await deferredInstallPrompt.userChoice;
+    await deferredInstallPrompt.userChoice;
     deferredInstallPrompt = null;
   } else {
-    alert('Aʼzo bo‘lish oynasi avtomatik paydo bo‘lganda shu tugma orqali o‘rnatasiz.');
+    alert('Uy ekraniga qo‘shish oynasi paydo bo‘lganda shu tugmani bosing.');
   }
 });
 
