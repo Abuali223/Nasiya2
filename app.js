@@ -139,17 +139,20 @@ function removeClient(id){
 }
 
 // ---------- Client Detail & Transactions ----------
-let currentClientId = null;
+// Alohida tugmalar: Qarz va Tölov
+$('#addDebtBtn').addEventListener('click', () => {
+  $('#txnForm').reset();
+  $('#t_type').value = 'qarz';
+  $('#t_date').value = nowISO();
+  $('#txnModal').showModal();
+});
 
-function openClientDetail(id){
-  const c = db.clients.find(x=>x.id===id);
-  if(!c) return;
-  currentClientId = id;
-  $('#detailName').textContent = c.name || '';
-  $('#detailPhone').textContent = c.phone || '';
-  renderDetail();
-  $('#clientDetail').showModal();
-}
+$('#addPayBtn').addEventListener('click', () => {
+  $('#txnForm').reset();
+  $('#t_type').value = 'tolov';
+  $('#t_date').value = nowISO();
+  $('#txnModal').showModal();
+});
 
 function renderDetail(){
   const c = db.clients.find(x=>x.id===currentClientId);
