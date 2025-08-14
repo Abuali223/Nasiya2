@@ -15,25 +15,26 @@
   <header class="topbar">
     <h1>Mini CRM — <span class="accent">Nasiya</span> &amp; Tölovlar</h1>
     <div class="top-actions">
-      <button id="exportBtn" class="btn ghost" title="Maʼlumotlarni JSON sifatida yuklab olish">Eksport</button>
-      <label class="btn ghost file">
+      <button id="exportBtn" class="btn ghost admin-only" title="Maʼlumotlarni JSON sifatida yuklab olish">Eksport</button>
+      <label class="btn ghost file admin-only">
         Import <input type="file" id="importFile" accept="application/json" hidden>
       </label>
-      <button id="installBtn" class="btn" title="Ilovani qurilmaga o‘rnatish">O‘rnatish</button>
+      <button id="installBtn" class="btn">O‘rnatish</button>
+      <button id="lockBtn" class="btn ghost" title="Admin rejimi"><span id="lockState">🔒 Qulf</span></button>
     </div>
   </header>
 
   <main class="container">
     <section class="cards">
-      <div class="card">
+      <div class="card red">
         <div class="card-title">Jami qarz</div>
         <div class="card-value" id="totalDebt">0</div>
       </div>
-      <div class="card">
+      <div class="card cyan">
         <div class="card-title">Qaytgan to‘lov</div>
         <div class="card-value" id="totalPaid">0</div>
       </div>
-      <div class="card focus">
+      <div class="card green focus">
         <div class="card-title">Qoldiq</div>
         <div class="card-value" id="totalLeft">0</div>
       </div>
@@ -44,7 +45,9 @@
         <h2>Mijozlar</h2>
         <div class="panel-actions">
           <input id="search" class="input" placeholder="Qidirish: ism, telefon…" />
-          <button id="newClientBtn" class="btn">+ Mijoz qo‘shish</button>
+          <button id="newClientBtn" class="btn admin-only">+ Mijoz qo‘shish</button>
+          <input id="phoneLookup" class="input" placeholder="Telefon: +998…" inputmode="tel" style="width:180px" />
+          <button id="viewByPhoneBtn" class="btn ghost">Telefon bilan ko‘rish</button>
         </div>
       </div>
 
@@ -88,10 +91,10 @@
         </label>
       </div>
       <footer class="modal-footer">
-        <button type="button" class="btn warn" id="deleteClientBtn" hidden>O‘chirish</button>
+        <button type="button" class="btn warn admin-only" id="deleteClientBtn" hidden>O‘chirish</button>
         <div class="spacer"></div>
         <button type="button" class="btn ghost" data-close>Bekor qilish</button>
-        <button type="submit" class="btn">Saqlash</button>
+        <button type="submit" class="btn admin-only">Saqlash</button>
       </footer>
     </form>
   </dialog>
@@ -125,7 +128,7 @@
       </div>
       <footer class="modal-footer">
         <button type="button" class="btn ghost" data-close>Bekor qilish</button>
-        <button type="submit" class="btn">Qo‘shish</button>
+        <button type="submit" class="btn admin-only">Qo‘shish</button>
       </footer>
     </form>
   </dialog>
@@ -140,20 +143,21 @@
         <button type="button" class="icon-btn" data-close>&times;</button>
       </header>
       <section class="cards tight">
-        <div class="card small">
+        <div class="card small red">
           <div class="card-title">Qarz</div>
           <div class="card-value" id="detailDebt">0</div>
         </div>
-        <div class="card small">
+        <div class="card small cyan">
           <div class="card-title">Tölov</div>
           <div class="card-value" id="detailPaid">0</div>
         </div>
-        <div class="card small focus">
+        <div class="card small green focus">
           <div class="card-title">Qoldi</div>
           <div class="card-value" id="detailLeft">0</div>
         </div>
         <div class="spacer"></div>
-        <button id="addTxnBtn" class="btn">+ Qarz/Tölov</button>
+        <button id="addDebtBtn" class="btn debt admin-only">+ Qarz</button>
+        <button id="addPayBtn"  class="btn pay  admin-only">+ Tölov</button>
       </section>
       <div class="table-wrap">
         <table class="table" id="txnTable" aria-label="Tranzaksiyalar">
@@ -169,7 +173,7 @@
   </dialog>
 
   <template id="rowActions">
-    <div class="row-actions">
+    <div class="row-actions admin-only">
       <button class="chip" data-view>Ko‘rish</button>
       <button class="chip warn" data-remove>O‘chirish</button>
     </div>
