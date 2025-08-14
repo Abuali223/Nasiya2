@@ -1,192 +1,89 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="uz">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Alilazer • Nasiya & Tölovlar</title>
-  <meta name="theme-color" content="#0e1116" />
-  <meta name="description" content="Alilazer — mijozlar nasiya/qarz va to‘lovlarini hisoblash uchun mini CRM (local, parolsiz).">
-  <link rel="stylesheet" href="styles.css" />
-  <!-- (ixtiyoriy) PWA manifest va ikonlar -->
-  <!-- <link rel="manifest" href="manifest.webmanifest"> -->
-  <!-- <link rel="icon" sizes="192x192" href="icons/icon-192.png"> -->
-  <!-- <link rel="icon" sizes="512x512" href="icons/icon-512.png"> -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alilazer — Nasiya & To‘lovlar</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="topbar">
-    <h1>Alilazer — <span class="accent">Nasiya</span> &amp; Tölovlar</h1>
-    <div class="top-actions">
-      <button id="exportBtn" class="btn ghost" title="Maʼlumotlarni JSON qilib saqlash">Eksport</button>
-      <label class="btn ghost file" title="JSON fayldan yuklash">
-        Import <input type="file" id="importFile" accept="application/json" hidden>
-      </label>
-      <button id="installBtn" class="btn" title="Ilovani qurilmaga o‘rnatish">O‘rnatish</button>
-      <!-- ESKI QULF/PIN TUGMASI OLIB TASHLANDI -->
-    </div>
-  </header>
 
-  <main class="container">
-    <!-- Jami ko‘rsatkichlar -->
-    <section class="cards">
-      <div class="card red">
-        <div class="card-title">Jami qarz</div>
-        <div class="card-value" id="totalDebt">0</div>
-      </div>
-      <div class="card cyan">
-        <div class="card-title">Qaytgan to‘lov</div>
-        <div class="card-value" id="totalPaid">0</div>
-      </div>
-      <div class="card green focus">
-        <div class="card-title">Qoldiq</div>
-        <div class="card-value" id="totalLeft">0</div>
-      </div>
-    </section>
+<header>
+  <h1>Alilazer — Nasiya & To‘lovlar</h1>
+  <div class="stats">
+    <div class="stat">Jami qarz: <span id="totalDebt">0 so‘m</span></div>
+    <div class="stat">Qaytgan to‘lov: <span id="totalPaid">0 so‘m</span></div>
+    <div class="stat">Qoldiq: <span id="totalLeft">0 so‘m</span></div>
+  </div>
+</header>
 
-    <!-- Mijozlar ro‘yxati -->
-    <section class="panel">
-      <div class="panel-header">
-        <h2>Mijozlar</h2>
-        <div class="panel-actions">
-          <input id="search" class="input" placeholder="Qidirish: ism, telefon…" />
-          <button id="newClientBtn" class="btn">+ Mijoz qo‘shish</button>
-          <input id="phoneLookup" class="input" placeholder="Telefon: +998…" inputmode="tel" style="width:180px" />
-          <button id="viewByPhoneBtn" class="btn ghost">Telefon bilan ko‘rish</button>
-        </div>
-      </div>
+<main>
+  <div class="controls">
+    <button id="newClientBtn">+ Mijoz qo‘shish</button>
+    <input type="text" id="search" placeholder="Qidirish: ism yoki telefon">
+  </div>
 
-      <div class="table-wrap">
-        <table class="table" id="clientTable" aria-label="Mijozlar ro‘yxati">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Ism</th>
-              <th>Telefon</th>
-              <th>Qarz</th>
-              <th>To‘lov</th>
-              <th>Qoldi</th>
-              <th>Amal</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
-  </main>
+  <table id="clientTable">
+    <thead>
+      <tr>
+        <th>#</th><th>Ism</th><th>Telefon</th><th>Qarz</th><th>To‘lov</th><th>Qoldiq</th><th>Amal</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</main>
 
-  <!-- Mijoz qo‘shish / tahrirlash -->
-  <dialog id="clientModal" class="modal">
-    <form method="dialog" class="modal-content" id="clientForm">
-      <header class="modal-header">
-        <h3 id="modalTitle">Mijoz</h3>
-        <button type="button" class="icon-btn" data-close>&times;</button>
-      </header>
-      <div class="grid">
-        <label class="field">
-          <span>Ism</span>
-          <input required id="c_name" class="input" placeholder="Masalan: Anvar Karimov" />
-        </label>
-        <label class="field">
-          <span>Telefon</span>
-          <input id="c_phone" class="input" inputmode="tel" placeholder="+998 90 123 45 67" />
-        </label>
-        <label class="field full">
-          <span>Eslatma (ixtiyoriy)</span>
-          <textarea id="c_note" class="input" rows="2" placeholder="Masalan: doimiy mijoz"></textarea>
-        </label>
-      </div>
-      <footer class="modal-footer">
-        <button type="button" class="btn warn" id="deleteClientBtn" hidden>O‘chirish</button>
-        <div class="spacer"></div>
-        <button type="button" class="btn ghost" data-close>Bekor qilish</button>
-        <button type="submit" class="btn">Saqlash</button>
-      </footer>
-    </form>
-  </dialog>
+<dialog id="clientModal">
+  <form id="clientForm" method="dialog">
+    <h3 id="modalTitle">Yangi mijoz</h3>
+    <label>Ism: <input type="text" id="c_name" required></label>
+    <label>Telefon: <input type="text" id="c_phone" placeholder="+998901234567"></label>
+    <label>Eslatma: <textarea id="c_note"></textarea></label>
+    <menu>
+      <button type="submit">Saqlash</button>
+      <button type="reset" data-close>Bekor qilish</button>
+    </menu>
+  </form>
+</dialog>
 
-  <!-- Tranzaksiya qo‘shish -->
-  <dialog id="txnModal" class="modal">
-    <form method="dialog" class="modal-content" id="txnForm">
-      <header class="modal-header">
-        <h3>Qarz / Tölov qo‘shish</h3>
-        <button type="button" class="icon-btn" data-close>&times;</button>
-      </header>
-      <div class="grid">
-        <label class="field">
-          <span>Turi</span>
-          <select id="t_type" class="input">
-            <option value="qarz">Qarz (➕)</option>
-            <option value="tolov">Tölov (➖)</option>
-          </select>
-        </label>
-        <label class="field">
-          <span>Miqdor</span>
-          <input id="t_amount" class="input" type="number" step="0.01" min="0.01" placeholder="0" required />
-        </label>
-        <label class="field">
-          <span>Sana</span>
-          <input id="t_date" class="input" type="date" />
-        </label>
-        <label class="field full">
-          <span>Eslatma</span>
-          <input id="t_note" class="input" placeholder="Masalan: 1-nasiya, naqd" />
-        </label>
-      </div>
-      <footer class="modal-footer">
-        <button type="button" class="btn ghost" data-close>Bekor qilish</button>
-        <button type="submit" class="btn">Qo‘shish</button>
-      </footer>
-    </form>
-  </dialog>
+<dialog id="clientDetail">
+  <h3 id="detailName"></h3>
+  <p id="detailPhone" class="muted"></p>
+  <div class="cards">
+    <div class="card"><span>Qarz</span><strong id="detailDebt">0 so‘m</strong></div>
+    <div class="card"><span>To‘lov</span><strong id="detailPaid">0 so‘m</strong></div>
+    <div class="card"><span>Qoldiq</span><strong id="detailLeft">0 so‘m</strong></div>
+  </div>
+  <div class="controls">
+    <button id="addDebtBtn">+ Qarz</button>
+    <button id="addPayBtn">+ To‘lov</button>
+  </div>
+  <table id="txnTable">
+    <thead>
+      <tr><th>#</th><th>Sana</th><th>Turi</th><th>Miqdor</th><th>Eslatma</th><th>Amal</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</dialog>
 
-  <!-- Mijoz detali va tranzaksiyalar -->
-  <dialog id="clientDetail" class="modal wide">
-    <div class="modal-content">
-      <header class="modal-header">
-        <div>
-          <h3 id="detailName">Mijoz</h3>
-          <div class="muted" id="detailPhone"></div>
-        </div>
-        <button type="button" class="icon-btn" data-close>&times;</button>
-      </header>
-      <section class="cards tight">
-        <div class="card small red">
-          <div class="card-title">Qarz</div>
-          <div class="card-value" id="detailDebt">0</div>
-        </div>
-        <div class="card small cyan">
-          <div class="card-title">Tölov</div>
-          <div class="card-value" id="detailPaid">0</div>
-        </div>
-        <div class="card small green focus">
-          <div class="card-title">Qoldi</div>
-          <div class="card-value" id="detailLeft">0</div>
-        </div>
-        <div class="spacer"></div>
-        <button id="addDebtBtn" class="btn debt">+ Qarz</button>
-        <button id="addPayBtn"  class="btn pay">+ Tölov</button>
-      </section>
+<dialog id="txnModal">
+  <form id="txnForm" method="dialog">
+    <label>Turi:
+      <select id="t_type">
+        <option value="qarz">Qarz</option>
+        <option value="tolov">To‘lov</option>
+      </select>
+    </label>
+    <label>Miqdor: <input type="number" id="t_amount" required></label>
+    <label>Sana: <input type="date" id="t_date"></label>
+    <label>Eslatma: <input type="text" id="t_note"></label>
+    <menu>
+      <button type="submit">Saqlash</button>
+      <button type="reset" data-close>Bekor qilish</button>
+    </menu>
+  </form>
+</dialog>
 
-      <div class="table-wrap">
-        <table class="table" id="txnTable" aria-label="Tranzaksiyalar">
-          <thead>
-            <tr>
-              <th>#</th><th>Sana</th><th>Turi</th><th>Miqdor</th><th>Eslatma</th><th>Amal</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-  </dialog>
-
-  <!-- Jadvaldagi amal tugmalari shabloni -->
-  <template id="rowActions">
-    <div class="row-actions">
-      <button class="chip" data-view>Ko‘rish</button>
-      <button class="chip warn" data-remove>O‘chirish</button>
-    </div>
-  </template>
-
-  <script src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
