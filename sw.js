@@ -1,5 +1,5 @@
 // Simple offline cache for PWA
-const CACHE = 'nasiya-cache-v1';
+const CACHE = 'nasiya-cache-v2';
 const ASSETS = [
   './',
   './index.html',
