@@ -3,28 +3,30 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Mini CRM • Nasiya & Tölovlar</title>
+  <title>Alilazer • Nasiya & Tölovlar</title>
   <meta name="theme-color" content="#0e1116" />
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" sizes="192x192" href="icons/icon-192.png">
-  <link rel="icon" sizes="512x512" href="icons/icon-512.png">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="stylesheet" href="styles.css">
+  <meta name="description" content="Alilazer — mijozlar nasiya/qarz va to‘lovlarini hisoblash uchun mini CRM (local, parolsiz).">
+  <link rel="stylesheet" href="styles.css" />
+  <!-- (ixtiyoriy) PWA manifest va ikonlar -->
+  <!-- <link rel="manifest" href="manifest.webmanifest"> -->
+  <!-- <link rel="icon" sizes="192x192" href="icons/icon-192.png"> -->
+  <!-- <link rel="icon" sizes="512x512" href="icons/icon-512.png"> -->
 </head>
 <body>
   <header class="topbar">
-    <h1>Mini CRM — <span class="accent">Nasiya</span> &amp; Tölovlar</h1>
+    <h1>Alilazer — <span class="accent">Nasiya</span> &amp; Tölovlar</h1>
     <div class="top-actions">
-      <button id="exportBtn" class="btn ghost admin-only" title="Maʼlumotlarni JSON sifatida yuklab olish">Eksport</button>
-      <label class="btn ghost file admin-only">
+      <button id="exportBtn" class="btn ghost" title="Maʼlumotlarni JSON qilib saqlash">Eksport</button>
+      <label class="btn ghost file" title="JSON fayldan yuklash">
         Import <input type="file" id="importFile" accept="application/json" hidden>
       </label>
-      <button id="installBtn" class="btn">O‘rnatish</button>
-      <button id="lockBtn" class="btn ghost" title="Admin rejimi"><span id="lockState">🔒 Qulf</span></button>
+      <button id="installBtn" class="btn" title="Ilovani qurilmaga o‘rnatish">O‘rnatish</button>
+      <!-- ESKI QULF/PIN TUGMASI OLIB TASHLANDI -->
     </div>
   </header>
 
   <main class="container">
+    <!-- Jami ko‘rsatkichlar -->
     <section class="cards">
       <div class="card red">
         <div class="card-title">Jami qarz</div>
@@ -40,12 +42,13 @@
       </div>
     </section>
 
+    <!-- Mijozlar ro‘yxati -->
     <section class="panel">
       <div class="panel-header">
         <h2>Mijozlar</h2>
         <div class="panel-actions">
           <input id="search" class="input" placeholder="Qidirish: ism, telefon…" />
-          <button id="newClientBtn" class="btn admin-only">+ Mijoz qo‘shish</button>
+          <button id="newClientBtn" class="btn">+ Mijoz qo‘shish</button>
           <input id="phoneLookup" class="input" placeholder="Telefon: +998…" inputmode="tel" style="width:180px" />
           <button id="viewByPhoneBtn" class="btn ghost">Telefon bilan ko‘rish</button>
         </div>
@@ -70,6 +73,7 @@
     </section>
   </main>
 
+  <!-- Mijoz qo‘shish / tahrirlash -->
   <dialog id="clientModal" class="modal">
     <form method="dialog" class="modal-content" id="clientForm">
       <header class="modal-header">
@@ -87,18 +91,19 @@
         </label>
         <label class="field full">
           <span>Eslatma (ixtiyoriy)</span>
-          <textarea id="c_note" class="input" rows="2" placeholder="Masalan: Doimiy mijoz"></textarea>
+          <textarea id="c_note" class="input" rows="2" placeholder="Masalan: doimiy mijoz"></textarea>
         </label>
       </div>
       <footer class="modal-footer">
-        <button type="button" class="btn warn admin-only" id="deleteClientBtn" hidden>O‘chirish</button>
+        <button type="button" class="btn warn" id="deleteClientBtn" hidden>O‘chirish</button>
         <div class="spacer"></div>
         <button type="button" class="btn ghost" data-close>Bekor qilish</button>
-        <button type="submit" class="btn admin-only">Saqlash</button>
+        <button type="submit" class="btn">Saqlash</button>
       </footer>
     </form>
   </dialog>
 
+  <!-- Tranzaksiya qo‘shish -->
   <dialog id="txnModal" class="modal">
     <form method="dialog" class="modal-content" id="txnForm">
       <header class="modal-header">
@@ -128,11 +133,12 @@
       </div>
       <footer class="modal-footer">
         <button type="button" class="btn ghost" data-close>Bekor qilish</button>
-        <button type="submit" class="btn admin-only">Qo‘shish</button>
+        <button type="submit" class="btn">Qo‘shish</button>
       </footer>
     </form>
   </dialog>
 
+  <!-- Mijoz detali va tranzaksiyalar -->
   <dialog id="clientDetail" class="modal wide">
     <div class="modal-content">
       <header class="modal-header">
@@ -156,9 +162,10 @@
           <div class="card-value" id="detailLeft">0</div>
         </div>
         <div class="spacer"></div>
-        <button id="addDebtBtn" class="btn debt admin-only">+ Qarz</button>
-        <button id="addPayBtn"  class="btn pay  admin-only">+ Tölov</button>
+        <button id="addDebtBtn" class="btn debt">+ Qarz</button>
+        <button id="addPayBtn"  class="btn pay">+ Tölov</button>
       </section>
+
       <div class="table-wrap">
         <table class="table" id="txnTable" aria-label="Tranzaksiyalar">
           <thead>
@@ -172,8 +179,9 @@
     </div>
   </dialog>
 
+  <!-- Jadvaldagi amal tugmalari shabloni -->
   <template id="rowActions">
-    <div class="row-actions admin-only">
+    <div class="row-actions">
       <button class="chip" data-view>Ko‘rish</button>
       <button class="chip warn" data-remove>O‘chirish</button>
     </div>
