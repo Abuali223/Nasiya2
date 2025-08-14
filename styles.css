@@ -1,13 +1,13 @@
-/* Mini CRM • Nasiya & Tölovlar — Zamonaviy ko‘rinish */
+/* Mini CRM • Nasiya & Tölovlar — Secure/Viewer */
 :root{
   --bg:#0e1116;
   --panel:#151a22;
   --panel-2:#0f1520;
   --muted:#8a94a6;
   --text:#e6eefc;
-  --accent:#22c55e; /* green trend */
-  --accent-2:#4f46e5; /* indigo trend */
-  --info:#06b6d4; /* cyan trend */
+  --accent:#22c55e;
+  --accent-2:#4f46e5;
+  --info:#06b6d4;
   --warn:#ef4444;
   --border:#232936;
   --chip:#1d2430;
@@ -47,7 +47,11 @@ body{
 .card.focus{outline: var(--focus)}
 .card.small{padding:14px}
 .card-title{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px}
-.card-value{font-size:28px; margin-top:6px; font-weight:700}
+.card-value{font-size:28px; margin-top:6px; font-weight:700; color:#fff}
+
+.card.red{border-color: rgba(239,68,68,.35); box-shadow: 0 10px 26px rgba(239,68,68,.12)}
+.card.cyan{border-color: rgba(6,182,212,.35); box-shadow: 0 10px 26px rgba(6,182,212,.12)}
+.card.green{border-color: rgba(34,197,94,.55); box-shadow: 0 10px 26px rgba(34,197,94,.16)}
 
 .panel{border:1px solid var(--border); border-radius:var(--radius); background:var(--panel); box-shadow:var(--shadow)}
 .panel-header{display:flex; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border)}
@@ -69,10 +73,10 @@ body{
   padding:10px 14px; color:#07110a; font-weight:700; border-radius:10px; cursor:pointer;
 }
 .btn:hover{filter:brightness(1.05)}
-.btn.ghost{
-  background:transparent; color:var(--text); border:1px solid var(--border)
-}
+.btn.ghost{ background:transparent; color:var(--text); border:1px solid var(--border) }
 .btn.warn{background:linear-gradient(180deg, #ff7575, var(--warn)); color:white}
+.btn.debt{ background: linear-gradient(180deg, #ff7a7a, #ef4444); color: #fff; }
+.btn.pay { background: linear-gradient(180deg, #46d6e9, #06b6d4); color: #062026; }
 
 .btn.file{position:relative}
 
@@ -104,6 +108,18 @@ body{
 
 .muted{color:var(--muted)}
 .spacer{flex:1}
+
+.badge{
+  display:inline-block; padding:4px 10px; border-radius:999px; font-weight:700;
+  border:1px solid var(--border); background:var(--chip); color:var(--text);
+}
+.badge.debt{ border-color: rgba(239,68,68,.45); box-shadow: 0 0 0 3px rgba(239,68,68,.12) inset; }
+.badge.pay { border-color: rgba(6,182,212,.45); box-shadow: 0 0 0 3px rgba(6,182,212,.12) inset; }
+.amount.debt{ color:#ef4444; font-weight:700; }
+.amount.pay { color:#06b6d4; font-weight:700; }
+
+/* Admin bo'lmasa tahrir elementlarini yashiramiz */
+.locked .admin-only{ display:none !important; }
 
 @media (max-width: 720px){
   .cards{grid-template-columns:1fr}
