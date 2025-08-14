@@ -168,14 +168,15 @@ function renderDetail(){
     .sort((a,b)=> (b.date||'').localeCompare(a.date||''))
     .forEach((t, i) => {
       const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td>${i+1}</td>
-        <td>${fmtDate(t.date)}</td>
-        <td>${t.type==='qarz' ? 'Qarz (➕)' : 'Tölov (➖)'}</td>
-        <td>${money(t.amount)}</td>
-        <td>${t.note||''}</td>
-        <td><button class="chip warn" data-del="${t.id}">O‘chirish</button></td>
-      `;
+      const isDebt = t.type === 'qarz';
+tr.innerHTML = `
+  <td>${i+1}</td>
+  <td>${fmtDate(t.date)}</td>
+  <td><span class="badge ${isDebt ? 'debt' : 'pay'}">${isDebt ? 'Qarz (➕)' : 'Tölov (➖)'}</span></td>
+  <td class="amount ${isDebt ? 'debt' : 'pay'}">${money(t.amount)}</td>
+  <td>${t.note || ''}</td>
+  <td><button class="chip warn" data-del="${t.id}">O‘chirish</button></td>
+`;
       tr.querySelector('[data-del]').addEventListener('click', () => {
         if(confirm('Tranzaksiyani o‘chirasizmi?')){
           const idx = c.transactions.findIndex(x=>x.id===t.id);
