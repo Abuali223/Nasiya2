@@ -110,3 +110,42 @@ body{
   .cards.tight{grid-template-columns:1fr 1fr}
   .grid{grid-template-columns:1fr}
 }
+/* ==== Kontrastni oshirish va ranglar ==== */
+:root{
+  --debt:#ef4444;   /* Qarz - qizil */
+  --pay:#06b6d4;    /* Tölov - ko'k/siyaan */
+  --left:#22c55e;   /* Qoldiq - yashil */
+}
+
+/* Qora chiqayotgan joylar oq bo'lsin */
+body, h1, h2, h3, h4, th, td, .btn, .chip, .icon-btn { color: var(--text); }
+.table td, .table th { color: var(--text); }
+
+/* Kartochkalarni rang bilan ajratish (ham yuqori jami, ham detaldagi 3 ta karta uchun) */
+.cards > .card:nth-child(1){ /* Qarz */
+  border-color: rgba(239,68,68,.35);
+  box-shadow: 0 10px 30px rgba(239,68,68,.12);
+}
+.cards > .card:nth-child(2){ /* Tölov */
+  border-color: rgba(6,182,212,.35);
+  box-shadow: 0 10px 30px rgba(6,182,212,.12);
+}
+.cards > .card:nth-child(3){ /* Qoldiq */
+  border-color: rgba(34,197,94,.45);
+  box-shadow: 0 10px 30px rgba(34,197,94,.16);
+}
+
+/* Jadvalda turi ustunini rangli “badge” bilan ko'rsatish */
+.badge{
+  display:inline-block; padding:4px 10px; border-radius:999px; font-weight:700;
+  border:1px solid var(--border); background:var(--chip); color:var(--text);
+}
+.badge.debt{ border-color: rgba(239,68,68,.45); box-shadow: 0 0 0 3px rgba(239,68,68,.12) inset; }
+.badge.pay { border-color: rgba(6,182,212,.45); box-shadow: 0 0 0 3px rgba(6,182,212,.12) inset; }
+
+/* Miqdor ustunini ham rang bilan ajratish (ixtiyoriy, lekin chiroyli ko'rinadi) */
+.amount.debt{ color: var(--debt); font-weight: 700; }
+.amount.pay { color: var(--pay);  font-weight: 700; }
+
+/* Modal va tugmalarda qora ko'rinib qolmasligi uchun */
+.icon-btn, .btn.ghost{ color: var(--text); }
