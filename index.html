@@ -4,15 +4,50 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Alilazer — Nasiya & To‘lovlar</title>
+  <meta name="theme-color" content="#0e1116" />
+  <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="styles.css" />
+
+  <!-- Firebase SDK (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <script>
+    // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyA3I7m0ZfpchebCrnxtS0zOZq86eWducKs",
+  authDomain: "alilazer-cd582.firebaseapp.com",
+  projectId: "alilazer-cd582",
+  storageBucket: "alilazer-cd582.firebasestorage.app",
+  messagingSenderId: "831212822404",
+  appId: "1:831212822404:web:52a0c48d2c1cd1458cc7d1",
+  measurementId: "G-S1FNCJ5W99"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+  </script>
 </head>
 <body>
   <header class="topbar">
     <h1>Alilazer — <span class="accent">Nasiya</span> &amp; To‘lovlar</h1>
     <div class="top-actions">
-      <button id="exportBtn" class="btn ghost">Eksport</button>
-      <label class="btn ghost file">Import<input type="file" id="importFile" accept="application/json" hidden></label>
+      <button id="exportBtn" class="btn ghost admin-only">Eksport</button>
+      <label class="btn ghost file admin-only">Import
+        <input type="file" id="importFile" accept="application/json" hidden>
+      </label>
       <button id="installBtn" class="btn">O‘rnatish</button>
+      <button id="adminLoginBtn" class="btn ghost">Admin kirish</button>
+      <button id="logoutBtn" class="btn ghost" style="display:none">Chiqish</button>
     </div>
   </header>
 
@@ -28,8 +63,8 @@
         <h2>Mijozlar</h2>
         <div class="panel-actions">
           <input id="search" class="input" placeholder="Qidirish: ism, telefon…" />
-          <button id="newClientBtn" class="btn">+ Mijoz qo‘shish</button>
-          <input id="phoneLookup" class="input" placeholder="Telefon: +998…" inputmode="tel" style="width:180px" />
+          <button id="newClientBtn" class="btn admin-only">+ Mijoz qo‘shish</button>
+          <input id="phoneLookup" class="input" placeholder="Telefon: +998…" inputmode="tel" />
           <button id="viewByPhoneBtn" class="btn ghost">Telefon bilan ko‘rish</button>
         </div>
       </div>
@@ -46,6 +81,25 @@
     </section>
   </main>
 
+  <!-- Admin login -->
+  <dialog id="adminAuth" class="modal">
+    <form method="dialog" class="modal-content" id="adminAuthForm">
+      <header class="modal-header">
+        <h3>Admin kirish</h3>
+        <button type="button" class="icon-btn" data-close>&times;</button>
+      </header>
+      <div class="grid">
+        <label class="field"><span>Email</span><input id="adm_email" class="input" type="email" required></label>
+        <label class="field"><span>Parol</span><input id="adm_pass" class="input" type="password" required></label>
+      </div>
+      <footer class="modal-footer">
+        <div class="spacer"></div>
+        <button type="button" class="btn ghost" data-close>Bekor qilish</button>
+        <button type="submit" class="btn">Kirish</button>
+      </footer>
+    </form>
+  </dialog>
+
   <!-- Mijoz formasi -->
   <dialog id="clientModal" class="modal">
     <form method="dialog" class="modal-content" id="clientForm">
@@ -54,15 +108,15 @@
         <button type="button" class="icon-btn" data-close>&times;</button>
       </header>
       <div class="grid">
-        <label class="field"><span>Ism</span><input id="c_name" class="input" required /></label>
-        <label class="field"><span>Telefon</span><input id="c_phone" class="input" inputmode="tel" placeholder="+998…" /></label>
+        <label class="field"><span>Ism</span><input id="c_name" class="input" required/></label>
+        <label class="field"><span>Telefon</span><input id="c_phone" class="input" inputmode="tel" placeholder="+998…"/></label>
         <label class="field full"><span>Eslatma</span><textarea id="c_note" class="input" rows="2"></textarea></label>
       </div>
       <footer class="modal-footer">
-        <button type="button" class="btn warn" id="deleteClientBtn" hidden>O‘chirish</button>
+        <button type="button" class="btn warn admin-only" id="deleteClientBtn" hidden>O‘chirish</button>
         <div class="spacer"></div>
         <button type="button" class="btn ghost" data-close>Bekor qilish</button>
-        <button type="submit" class="btn">Saqlash</button>
+        <button type="submit" class="btn admin-only">Saqlash</button>
       </footer>
     </form>
   </dialog>
@@ -76,15 +130,18 @@
       </header>
       <div class="grid">
         <label class="field"><span>Turi</span>
-          <select id="t_type" class="input"><option value="qarz">Qarz</option><option value="tolov">To‘lov</option></select>
+          <select id="t_type" class="input">
+            <option value="qarz">Qarz</option>
+            <option value="tolov">To‘lov</option>
+          </select>
         </label>
-        <label class="field"><span>Miqdor</span><input id="t_amount" class="input" type="number" min="0.01" step="0.01" required /></label>
-        <label class="field"><span>Sana</span><input id="t_date" class="input" type="date" /></label>
-        <label class="field full"><span>Eslatma</span><input id="t_note" class="input" /></label>
+        <label class="field"><span>Miqdor</span><input id="t_amount" class="input" type="number" min="0.01" step="0.01" required/></label>
+        <label class="field"><span>Sana</span><input id="t_date" class="input" type="date"/></label>
+        <label class="field full"><span>Eslatma</span><input id="t_note" class="input"/></label>
       </div>
       <footer class="modal-footer">
         <button type="button" class="btn ghost" data-close>Bekor qilish</button>
-        <button type="submit" class="btn">Qo‘shish</button>
+        <button type="submit" class="btn admin-only">Qo‘shish</button>
       </footer>
     </form>
   </dialog>
@@ -101,8 +158,8 @@
         <div class="card small cyan"><div class="card-title">To‘lov</div><div class="card-value" id="detailPaid">0</div></div>
         <div class="card small green focus"><div class="card-title">Qoldi</div><div class="card-value" id="detailLeft">0</div></div>
         <div class="spacer"></div>
-        <button id="addDebtBtn" class="btn debt">+ Qarz</button>
-        <button id="addPayBtn"  class="btn pay">+ To‘lov</button>
+        <button id="addDebtBtn" class="btn debt admin-only">+ Qarz</button>
+        <button id="addPayBtn"  class="btn pay  admin-only">+ To‘lov</button>
       </section>
       <div class="table-wrap">
         <table class="table" id="txnTable">
@@ -114,12 +171,20 @@
   </dialog>
 
   <template id="rowActions">
-    <div class="row-actions">
+    <div class="row-actions admin-only">
       <button class="chip" data-view>Ko‘rish</button>
       <button class="chip warn" data-remove>O‘chirish</button>
     </div>
   </template>
 
   <script src="app.js"></script>
+
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js');
+    });
+  }
+  </script>
 </body>
 </html>
