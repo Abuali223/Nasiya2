@@ -1,168 +1,293 @@
-const $ = s => document.querySelector(s);
+// Alilazer • Firebase + Auth + Firestore
+const $  = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 
-let db = load();
-let currentClientId = null;
+firebase.initializeApp(window.__FIREBASE_CONFIG__);
+const auth = firebase.auth();
+const db   = firebase.firestore();
 
-function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
-function money(n){ return Number(n||0).toLocaleString('uz-UZ',{style:'currency',currency:'UZS',maximumFractionDigits:0}); }
-function sum(arr){ return arr.reduce((a,b)=>a+b,0); }
-function fmtDate(d){ if(!d) return ''; return new Date(d).toLocaleDateString('uz-UZ'); }
-function nowISO(){ return new Date().toISOString().slice(0,10); }
+let isAuthed=false, clients=[], currentClientId=null;
+
+const money  = n => Number(n||0).toLocaleString('uz-UZ',{style:'currency',currency:'UZS',maximumFractionDigits:0});
+const fmt    = d => d ? new Date(d).toLocaleDateString('uz-UZ') : '';
+const nowISO = () => new Date().toISOString().slice(0,10);
 
 function sanitizePhone(v){
-  v = v.replace(/[^0-9]/g,'');
-  if(v.startsWith('998')) v = '+'+v;
-  else if(v.length===9) v = '+998'+v;
-  return v;
+  v = (v || '').replace(/\D/g,'');
+  if (!v) return '';
+  if (v.startsWith('998') && v.length===12) return '+'+v;
+  if (v.startsWith('0')   && v.length>=10)  return '+998' + v.slice(1);
+  if (v.length===9)                          return '+998' + v;
+  if (v.length===12)                         return '+' + v;
+  return '';
 }
 
-function load(){
-  try{ return JSON.parse(localStorage.getItem('alilazer-db')) || {clients:[]}; }
-  catch{ return {clients:[]}; }
+function setUI(on){
+  isAuthed = !!on;
+  $('#logoutBtn').style.display = on ? '' : 'none';
+  $$('.admin-only').forEach(el => el.style.display = on ? '' : 'none');
+}
+setUI(false);
+
+$('#adminLoginBtn')?.addEventListener('click', ()=> $('#adminAuth').showModal());
+$$('[data-close]').forEach(b=>b.addEventListener('click',e=>e.target.closest('dialog').close()));
+$('#adminAuthForm')?.addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const email = $('#adm_email').value.trim();
+  const pass  = $('#adm_pass').value.trim();
+  try{
+    await auth.signInWithEmailAndPassword(email, pass);
+    $('#adminAuth').close();
+  }catch(err){ alert('Kirish xatosi: '+err.message); }
+});
+$('#logoutBtn')?.addEventListener('click', ()=>auth.signOut());
+
+auth.onAuthStateChanged(()=>{ setUI(!!auth.currentUser); subscribeClients(); });
+
+let unsubClients=null;
+function subscribeClients(){
+  if (unsubClients){ unsubClients(); unsubClients = null; }
+  unsubClients = db.collection('clients').orderBy('createdAt','desc').onSnapshot(
+    snap => { clients = snap.docs.map(d=>({id:d.id, ...d.data()})); renderClients(); renderTotals(); },
+    err  => alert('O‘qish xatosi: '+err.message)
+  );
 }
 
-function save(){
-  localStorage.setItem('alilazer-db', JSON.stringify(db));
-  render();
-}
-
-function computeTotals(){
+function renderTotals(){
   let totalDebt=0,totalPaid=0;
-  for(const c of db.clients){
-    const debt = sum(c.transactions.filter(t=>t.type==='qarz').map(t=>+t.amount));
-    const paid = sum(c.transactions.filter(t=>t.type==='tolov').map(t=>+t.amount));
-    totalDebt += debt; totalPaid += paid;
-  }
-  return { totalDebt, totalPaid, totalLeft: Math.max(totalDebt-totalPaid,0) };
-}
-
-function render(){
-  const {totalDebt,totalPaid,totalLeft} = computeTotals();
+  for(const c of clients){ totalDebt += Number(c.debt||0); totalPaid += Number(c.paid||0); }
   $('#totalDebt').textContent = money(totalDebt);
   $('#totalPaid').textContent = money(totalPaid);
-  $('#totalLeft').textContent = money(totalLeft);
+  $('#totalLeft').textContent = money(Math.max(totalDebt-totalPaid,0));
+}
 
-  const tbody = $('#clientTable tbody');
+$('#search')?.addEventListener('input', renderClients);
+
+function renderClients(){
+  const tbody = $('#clientTable tbody'); if(!tbody) return;
   tbody.innerHTML = '';
-  const q = $('#search').value.toLowerCase();
-  db.clients.forEach((c,i)=>{
-    const debt = sum(c.transactions.filter(t=>t.type==='qarz').map(t=>+t.amount));
-    const paid = sum(c.transactions.filter(t=>t.type==='tolov').map(t=>+t.amount));
-    const left = Math.max(debt-paid,0);
-    if(!q || c.name.toLowerCase().includes(q) || c.phone.includes(q)){
+  const q = ($('#search').value||'').toLowerCase();
+
+  clients
+    .filter(c => {
+      const name  = (c.name || '').toLowerCase();
+      const phone = (c.phone|| '').toLowerCase();
+      return !q || name.includes(q) || phone.includes(q);
+    })
+    .forEach((c,i)=>{
+      const left = Math.max(Number(c.debt||0)-Number(c.paid||0),0);
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td>${i+1}</td>
-        <td>${c.name}</td>
-        <td>${c.phone || '—'}</td>
-        <td>${money(debt)}</td>
-        <td>${money(paid)}</td>
-        <td>${money(left)}</td>
-        <td><button onclick="openClientDetail('${c.id}')">Ko‘rish</button></td>
+        <td>${c.name||''}</td>
+        <td>${c.phone||'—'}</td>
+        <td>${money(c.debt||0)}</td>
+        <td>${money(c.paid||0)}</td>
+        <td><strong>${money(left)}</strong></td>
+        <td></td>
       `;
+      const cell = tr.lastElementChild;
+
+      const view = document.createElement('button');
+      view.className='chip'; view.textContent='Ko‘rish';
+      view.onclick=()=>openClientDetail(c.id);
+      cell.appendChild(view);
+
+      if(isAuthed){
+        const del = document.createElement('button');
+        del.className='chip warn'; del.textContent='O‘chirish';
+        del.onclick=()=>removeClient(c.id);
+        cell.appendChild(del);
+      }
+
       tbody.appendChild(tr);
-    }
-  });
+    });
 }
 
-$('#newClientBtn').onclick = ()=>openClientForm();
-$('#search').oninput = render;
+$('#newClientBtn')?.addEventListener('click', ()=>{
+  if(!isAuthed) return alert('Avval admin sifatida kiring.');
+  openClientForm();
+});
 
 function openClientForm(id=null){
-  const form = $('#clientForm');
-  form.reset();
-  form.dataset.id = id || '';
+  const f = $('#clientForm');
+  f.reset(); f.dataset.id = id||'';
+  $('#deleteClientBtn').hidden = !id;
+  $('#modalTitle').textContent = id ? 'Mijozni tahrirlash' : 'Yangi mijoz';
+
   if(id){
-    const c = db.clients.find(x=>x.id===id);
-    $('#c_name').value = c.name;
-    $('#c_phone').value = c.phone;
-    $('#c_note').value = c.note;
+    const c = clients.find(x=>x.id===id); if(!c) return;
+    $('#c_name').value  = c.name || '';
+    $('#c_phone').value = c.phone|| '';
+    $('#c_note').value  = c.note || '';
+    $('#deleteClientBtn').onclick = () => {
+      if(confirm('O‘chirish?')){ removeClient(id); $('#clientModal').close(); }
+    };
   }
   $('#clientModal').showModal();
 }
 
-$$('[data-close]').forEach(btn=>btn.onclick=e=>e.target.closest('dialog').close());
-
-$('#clientForm').onsubmit = e=>{
+$('#clientForm')?.addEventListener('submit', async (e)=>{
   e.preventDefault();
-  const id = e.target.dataset.id;
-  const name = $('#c_name').value.trim();
-  let phone = $('#c_phone').value.trim();
-  phone = sanitizePhone(phone);
-  const note = $('#c_note').value.trim();
-  if(id){
-    const c = db.clients.find(x=>x.id===id);
-    c.name=name; c.phone=phone; c.note=note;
-  }else{
-    db.clients.push({id:uid(),name,phone,note,createdAt:nowISO(),transactions:[]});
-  }
-  save();
-  $('#clientModal').close();
+  if(!isAuthed) return alert('Avval admin sifatida kiring.');
+
+  const id    = e.target.dataset.id || null;
+  const name  = $('#c_name').value.trim();
+  const raw   = $('#c_phone').value.trim();
+  const phone = raw ? sanitizePhone(raw) : '';
+  const note  = $('#c_note').value.trim();
+  if(!name) return;
+
+  try{
+    if(id){
+      await db.collection('clients').doc(id).update({ name, phone, note });
+    } else {
+      await db.collection('clients').add({
+        name, phone, note, debt:0, paid:0,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    $('#clientModal').close();
+  }catch(err){ alert('Saqlash xatosi: '+err.message); }
+});
+
+async function removeClient(id){
+  if(!isAuthed) return;
+  if(!confirm('Mijoz va tranzaksiyalar o‘chirilsinmi?')) return;
+  const ref = db.collection('clients').doc(id);
+  const txs = await ref.collection('transactions').get();
+  const batch = db.batch();
+  txs.forEach(d=>batch.delete(d.ref));
+  batch.delete(ref);
+  await batch.commit();
 }
 
 function openClientDetail(id){
   currentClientId = id;
-  const c = db.clients.find(x=>x.id===id);
-  $('#detailName').textContent = c.name;
-  $('#detailPhone').textContent = c.phone;
-  renderDetail();
+  const c = clients.find(x=>x.id===id); if(!c) return;
+
+  $('#detailName').textContent  = c.name  || '';
+  $('#detailPhone').textContent = c.phone || '';
   $('#clientDetail').showModal();
+
+  $('#detailDebt').textContent = money(c.debt||0);
+  $('#detailPaid').textContent = money(c.paid||0);
+  $('#detailLeft').textContent = money(Math.max((c.debt||0)-(c.paid||0),0));
+
+  subscribeTxns(id);
+  $('#addDebtBtn').style.display = isAuthed ? '' : 'none';
+  $('#addPayBtn').style.display  = isAuthed ? '' : 'none';
 }
 
-function renderDetail(){
-  const c = db.clients.find(x=>x.id===currentClientId);
-  const debt = sum(c.transactions.filter(t=>t.type==='qarz').map(t=>+t.amount));
-  const paid = sum(c.transactions.filter(t=>t.type==='tolov').map(t=>+t.amount));
-  const left = Math.max(debt-paid,0);
-  $('#detailDebt').textContent = money(debt);
-  $('#detailPaid').textContent = money(paid);
-  $('#detailLeft').textContent = money(left);
-
-  const tbody = $('#txnTable tbody');
-  tbody.innerHTML = '';
-  c.transactions.forEach((t,i)=>{
-    tbody.innerHTML += `
-      <tr>
-        <td>${i+1}</td>
-        <td>${fmtDate(t.date)}</td>
-        <td>${t.type==='qarz'?'Qarz':'To‘lov'}</td>
-        <td>${money(t.amount)}</td>
-        <td>${t.note||''}</td>
-        <td><button onclick="delTxn('${t.id}')">O‘chirish</button></td>
-      </tr>
-    `;
-  });
+let unsubTxns=null;
+function subscribeTxns(clientId){
+  if(unsubTxns){ unsubTxns(); unsubTxns=null; }
+  unsubTxns = db.collection('clients').doc(clientId)
+    .collection('transactions').orderBy('date','desc')
+    .onSnapshot(snap=>{
+      const rows = snap.docs.map(d=>({id:d.id, ...d.data()}));
+      const tb = $('#txnTable tbody'); tb.innerHTML='';
+      rows.forEach((t,i)=>{
+        const isDebt = t.type==='qarz';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${i+1}</td>
+          <td>${fmt(t.date)}</td>
+          <td><span class="badge ${isDebt?'debt':'pay'}">${isDebt?'Qarz':'To‘lov'}</span></td>
+          <td class="amount">${money(t.amount)}</td>
+          <td>${t.note||''}</td>
+          <td>${isAuthed?('<button class="chip warn" data-del="'+t.id+'">O‘chirish</button>'):''}</td>
+        `;
+        tr.querySelector('[data-del]')?.addEventListener('click',()=>deleteTxn(t.id));
+        tb.appendChild(tr);
+      });
+    }, err=>alert('Txn xatosi: '+err.message));
 }
 
-$('#addDebtBtn').onclick = ()=>openTxnForm('qarz');
-$('#addPayBtn').onclick = ()=>openTxnForm('tolov');
-
-function openTxnForm(type){
+$('#addDebtBtn')?.addEventListener('click', ()=>openTxn('qarz'));
+$('#addPayBtn') ?.addEventListener('click', ()=>openTxn('tolov'));
+function openTxn(type){
+  if(!isAuthed) return alert('Avval admin sifatida kiring.');
   $('#txnForm').reset();
   $('#t_type').value = type;
   $('#t_date').value = nowISO();
   $('#txnModal').showModal();
 }
 
-$('#txnForm').onsubmit = e=>{
+$('#txnForm')?.addEventListener('submit', async (e)=>{
   e.preventDefault();
-  const c = db.clients.find(x=>x.id===currentClientId);
+  if(!isAuthed) return;
+  const cId  = currentClientId; if(!cId) return;
   const type = $('#t_type').value;
-  const amount = Number($('#t_amount').value);
-  const date = $('#t_date').value;
-  const note = $('#t_note').value;
-  c.transactions.push({id:uid(),type,amount,date,note});
-  save();
-  $('#txnModal').close();
-  renderDetail();
+  const amt  = Number($('#t_amount').value);
+  const date = $('#t_date').value || nowISO();
+  const note = $('#t_note').value.trim();
+  if(!amt || amt<=0) return;
+
+  const docRef = db.collection('clients').doc(cId);
+  const txnRef = docRef.collection('transactions').doc();
+  try{
+    await db.runTransaction(async tx=>{
+      const cs = await tx.get(docRef);
+      if(!cs.exists) throw new Error('Mijoz topilmadi');
+      let {debt=0, paid=0} = cs.data();
+      if(type==='qarz') debt += amt; else paid += amt;
+
+      tx.set(txnRef,{ id:txnRef.id, type, amount:amt, date, note, createdAt:firebase.firestore.FieldValue.serverTimestamp() });
+      tx.update(docRef,{ debt, paid });
+    });
+    $('#txnModal').close();
+  }catch(err){ alert('Qo‘shishda xato: '+err.message); }
+});
+
+async function deleteTxn(txnId){
+  if(!isAuthed) return;
+  if(!confirm('Tranzaksiyani o‘chirasizmi?')) return;
+  const docRef = db.collection('clients').doc(currentClientId);
+  const txnRef = docRef.collection('transactions').doc(txnId);
+  await db.runTransaction(async tx=>{
+    const cs = await tx.get(docRef);
+    const ts = await tx.get(txnRef);
+    let {debt=0, paid=0} = cs.data();
+    const t = ts.data();
+    if(t.type==='qarz') debt -= t.amount; else paid -= t.amount;
+    tx.delete(txnRef);
+    tx.update(docRef,{ debt:Math.max(debt,0), paid:Math.max(paid,0) });
+  });
 }
 
-function delTxn(id){
-  const c = db.clients.find(x=>x.id===currentClientId);
-  c.transactions = c.transactions.filter(t=>t.id!==id);
-  save();
-  renderDetail();
-}
+// Export/Import (admin only)
+$('#exportBtn')?.addEventListener('click',async()=>{
+  if(!isAuthed) return alert('Avval admin sifatida kiring.');
+  const data = { clients: [] };
+  const csnap = await db.collection('clients').get();
+  for (const cdoc of csnap.docs){
+    const c = { id: cdoc.id, ...cdoc.data(), transactions: [] };
+    const tsnap = await db.collection('clients').doc(cdoc.id).collection('transactions').get();
+    c.transactions = tsnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    data.clients.push(c);
+  }
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='alilazer-export.json'; a.click();
+});
 
-render();
+$('#importFile')?.addEventListener('change',async e=>{
+  if(!isAuthed){ e.target.value=''; return alert('Avval admin sifatida kiring.'); }
+  const f=e.target.files[0]; if(!f) return;
+  try{
+    const text=await f.text(); const data=JSON.parse(text);
+    if(!data || !Array.isArray(data.clients)) throw new Error('Format xato');
+    for (const c of data.clients){
+      const cref = c.id ? db.collection('clients').doc(c.id) : db.collection('clients').doc();
+      await cref.set({ name:c.name||'', phone:c.phone||'', note:c.note||'', debt:Number(c.debt||0), paid:Number(c.paid||0), createdAt:firebase.firestore.FieldValue.serverTimestamp() }, {merge:true});
+      if (Array.isArray(c.transactions)){
+        for (const t of c.transactions){
+          const tref = db.collection('clients').doc(cref.id).collection('transactions').doc(t.id||undefined);
+          await tref.set({ id:tref.id, type:t.type, amount:Number(t.amount||0), date:t.date||nowISO(), note:t.note||'', createdAt:firebase.firestore.FieldValue.serverTimestamp() }, {merge:true});
+        }
+      }
+    }
+    alert('Import tugadi');
+  }catch(err){ alert('Import xatosi: '+err.message); }
+  finally { e.target.value=''; }
+});
