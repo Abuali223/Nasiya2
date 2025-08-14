@@ -1,4 +1,4 @@
-Mini CRM — Nasiya & Tölovlar (PWA)
+Nasiya & Tölovlar (PWA)
 ====================================
 
 Qanday ishlatish:
