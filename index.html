@@ -2,36 +2,29 @@
 <html lang="uz">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Alilazer • Nasiya va Tölovlar Hisobi</title>
-  <meta name="description" content="Alilazer — mijozlar qarz va tölovlarini hisoblash, telefon orqali ko‘rish va admin boshqaruvi." />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mini CRM • Nasiya & Tölovlar</title>
   <meta name="theme-color" content="#0e1116" />
-  <!-- (ixtiyoriy) PWA manifest va ikonlar bo‘lsa, ulab qo‘ying -->
-  <!-- <link rel="manifest" href="manifest.webmanifest"> -->
-  <!-- <link rel="icon" sizes="192x192" href="icons/icon-192.png"> -->
-  <!-- <link rel="icon" sizes="512x512" href="icons/icon-512.png"> -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" sizes="512x512" href="icons/icon-512.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="stylesheet" href="styles.css">
-  <!-- Firebase SDKs (compat) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
   <header class="topbar">
-    <h1>Alilazer — <span class="accent">Nasiya</span> &amp; Tölovlar</h1>
+    <h1>Mini CRM — <span class="accent">Nasiya</span> &amp; Tölovlar</h1>
     <div class="top-actions">
       <button id="exportBtn" class="btn ghost admin-only" title="Maʼlumotlarni JSON sifatida yuklab olish">Eksport</button>
-      <label class="btn ghost file admin-only" title="JSON import">
+      <label class="btn ghost file admin-only">
         Import <input type="file" id="importFile" accept="application/json" hidden>
       </label>
-      <button id="installBtn" class="btn" title="Ilovani qurilmaga o‘rnatish">O‘rnatish</button>
-      <button id="adminLoginBtn" class="btn ghost" title="Admin kirish">Admin kirish</button>
-      <button id="logoutBtn" class="btn ghost" style="display:none" title="Chiqish">Chiqish</button>
+      <button id="installBtn" class="btn">O‘rnatish</button>
+      <button id="lockBtn" class="btn ghost" title="Admin rejimi"><span id="lockState">🔒 Qulf</span></button>
     </div>
   </header>
 
   <main class="container">
-    <!-- Jami ko‘rsatkichlar -->
     <section class="cards">
       <div class="card red">
         <div class="card-title">Jami qarz</div>
@@ -47,7 +40,6 @@
       </div>
     </section>
 
-    <!-- Mijozlar ro‘yxati -->
     <section class="panel">
       <div class="panel-header">
         <h2>Mijozlar</h2>
@@ -78,58 +70,6 @@
     </section>
   </main>
 
-  <!-- Admin login modal (Email/Parol) -->
-  <dialog id="adminAuth" class="modal">
-    <form method="dialog" class="modal-content" id="adminAuthForm">
-      <header class="modal-header">
-        <h3>Admin kirish</h3>
-        <button type="button" class="icon-btn" data-close>&times;</button>
-      </header>
-      <div class="grid">
-        <label class="field">
-          <span>Email</span>
-          <input id="adm_email" class="input" type="email" placeholder="admin@example.com" />
-        </label>
-        <label class="field">
-          <span>Parol</span>
-          <input id="adm_pass" class="input" type="password" placeholder="••••••••" />
-        </label>
-      </div>
-      <footer class="modal-footer">
-        <div class="spacer"></div>
-        <button type="button" class="btn ghost" data-close>Bekor qilish</button>
-        <button type="submit" class="btn">Kirish</button>
-      </footer>
-    </form>
-  </dialog>
-
-  <!-- Mijoz telefon orqali kirishi (SMS) -->
-  <dialog id="phoneLogin" class="modal">
-    <form method="dialog" class="modal-content" id="phoneLoginForm">
-      <header class="modal-header">
-        <h3>Telefon bilan kirish</h3>
-        <button type="button" class="icon-btn" data-close>&times;</button>
-      </header>
-      <div class="grid">
-        <label class="field">
-          <span>Telefon</span>
-          <input id="pl_phone" class="input" inputmode="tel" placeholder="+998 90 123 45 67" />
-        </label>
-        <div id="recaptcha-container"></div>
-        <label class="field">
-          <span>Tasdiqlash kodi</span>
-          <input id="pl_code" class="input" inputmode="numeric" placeholder="123456" />
-        </label>
-      </div>
-      <footer class="modal-footer">
-        <button type="button" class="btn" id="sendCodeBtn">Kod yuborish</button>
-        <div class="spacer"></div>
-        <button type="button" class="btn" id="verifyCodeBtn">Kirish</button>
-      </footer>
-    </form>
-  </dialog>
-
-  <!-- Mijoz qo‘shish / tahrirlash -->
   <dialog id="clientModal" class="modal">
     <form method="dialog" class="modal-content" id="clientForm">
       <header class="modal-header">
@@ -159,7 +99,6 @@
     </form>
   </dialog>
 
-  <!-- Tranzaksiya qo‘shish -->
   <dialog id="txnModal" class="modal">
     <form method="dialog" class="modal-content" id="txnForm">
       <header class="modal-header">
@@ -194,7 +133,6 @@
     </form>
   </dialog>
 
-  <!-- Mijoz detali va tranzaksiyalar ro‘yxati -->
   <dialog id="clientDetail" class="modal wide">
     <div class="modal-content">
       <header class="modal-header">
@@ -221,7 +159,6 @@
         <button id="addDebtBtn" class="btn debt admin-only">+ Qarz</button>
         <button id="addPayBtn"  class="btn pay  admin-only">+ Tölov</button>
       </section>
-
       <div class="table-wrap">
         <table class="table" id="txnTable" aria-label="Tranzaksiyalar">
           <thead>
@@ -235,7 +172,6 @@
     </div>
   </dialog>
 
-  <!-- Jadval qatori harakatlari uchun shablon (admin) -->
   <template id="rowActions">
     <div class="row-actions admin-only">
       <button class="chip" data-view>Ko‘rish</button>
@@ -243,19 +179,6 @@
     </div>
   </template>
 
-  <!-- Firebase config (o‘zingizniki bilan to‘ldiring) -->
-  <script>
-    window.__FIREBASE_CONFIG__ = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT_ID.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
-  </script>
-
-  <!-- Ilova logikasi -->
   <script src="app.js"></script>
 </body>
 </html>
