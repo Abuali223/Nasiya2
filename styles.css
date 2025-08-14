@@ -63,4 +63,9 @@ body {
     font-size: 13px;
     padding: 6px;
   }
-}
+}/* Summalarni oq rangda ko'rsatish */
+.card-value { color: #fff !important; }
+.amount { color: #fff !important; }
+
+/* Agar oldin .amount.debt / .amount.pay ranglari bor bo'lsa, ularni ham oq qilamiz */
+.amount.debt, .amount.pay { color: #fff !important; }
