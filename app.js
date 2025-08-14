@@ -233,7 +233,7 @@ $('#txnForm')?.addEventListener('submit', async (e)=>{
       let {debt=0, paid=0} = cs.data();
       if(type==='qarz') debt += amt; else paid += amt;
 
-      tx.set(txnRef,{ id:txnRef.id, type, amount:amt, date, note, createdAt:firebase.firestore.FieldValue.serverTimestamp() });
+      tx.set(txnRef,{ id:txnRef.id, type, amount:amt, date, note, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
       tx.update(docRef,{ debt, paid });
     });
     $('#txnModal').close();
