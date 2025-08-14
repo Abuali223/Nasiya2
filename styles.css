@@ -77,3 +77,33 @@ input, select, textarea {
   background: #1d2430;
   color: white;
 }
+/* ===== MATNLARNI OQ QILISH (PATCH) ===== */
+
+/* Umumiy matn */
+body { color: #e6eefc !important; }
+
+/* Kartochkalar ichidagi sarlavha va summa */
+.card-title { color: #cfe2ff !important; }
+.card-value { color: #ffffff !important; }
+
+/* Jami / Qarz / To‘lov / Qoldiq ko‘rsatkichlari */
+#totalDebt, #totalPaid, #totalLeft { color: #ffffff !important; }
+
+/* Jadval matnlari */
+.table th, .table td { color: #e6eefc !important; }
+
+/* Miqdorlar (jadval va modal ichida) */
+.amount, .amount.debt, .amount.pay { color: #ffffff !important; }
+
+/* Badge / Chip ichidagi yozuvlar */
+.badge, .chip { color: #e6eefc !important; }
+
+/* Modal oynalar matnlari */
+.modal .modal-content { color: #e6eefc !important; }
+
+/* Kichik izohlar (telefon raqami va h.k.) */
+.muted { color: #c7d2e1 !important; }
+
+/* Kirish maydonlari ichidagi matn va placeholder */
+.input, input, textarea, select { color: #e6eefc !important; }
+.input::placeholder, input::placeholder, textarea::placeholder { color: #9fb0c9 !important; }
