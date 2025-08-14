@@ -107,3 +107,41 @@ body { color: #e6eefc !important; }
 /* Kirish maydonlari ichidagi matn va placeholder */
 .input, input, textarea, select { color: #e6eefc !important; }
 .input::placeholder, input::placeholder, textarea::placeholder { color: #9fb0c9 !important; }
+/* ==== MATNLARNI OQ QILISH (PATCH) — dizaynni buzmaydi ==== */
+
+/* Umumiy matnlar */
+body, h1, h2, h3, h4, h5, h6, p, span, div, a, li, label {
+  color: #ffffff !important;
+}
+
+/* Kartochka yozuvlari */
+.card-title { color: #dbe7ff !important; }
+.card-value { color: #ffffff !important; }
+#totalDebt, #totalPaid, #totalLeft { color: #ffffff !important; }
+
+/* Jadval va hujayralar */
+.table th, .table td, table th, table td {
+  color: #ffffff !important;
+}
+
+/* Miqdorlar (jadval va modal) */
+.amount, .amount.debt, .amount.pay {
+  color: #ffffff !important;
+}
+
+/* Badge/Chip/tugma ichidagi matn */
+.badge, .chip, .btn, button {
+  color: #ffffff !important;
+}
+
+/* Modal oynalar matnlari */
+.modal .modal-content, .modal .modal-header, .modal .modal-footer {
+  color: #e6eefc !important;
+}
+
+/* Kichik izohlar (telefon va h.k.) */
+.muted { color: #c8d5f0 !important; }
+
+/* Input/textarea ichidagi matnlar va placeholder */
+.input, input, textarea, select { color: #ffffff !important; }
+.input::placeholder, input::placeholder, textarea::placeholder { color: #b5c4de !important; }
