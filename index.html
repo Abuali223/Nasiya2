@@ -20,6 +20,9 @@
         Import <input type="file" id="importFile" accept="application/json" hidden>
       </label>
       <button id="installBtn" class="btn" title="Ilovani qurilmaga o‘rnatish">O‘rnatish</button>
+      <button id="lockBtn" class="btn ghost" title="Admin rejimi">
+  <span id="lockState">🔒 Qulf</span>
+</button>
     </div>
   </header>
 
@@ -45,6 +48,8 @@
         <div class="panel-actions">
           <input id="search" class="input" placeholder="Qidirish: ism, telefon…" />
           <button id="newClientBtn" class="btn">+ Mijoz qo‘shish</button>
+          <input id="phoneLookup" class="input" placeholder="Telefon: +998…" inputmode="tel" style="width:180px" />
+<button id="viewByPhoneBtn" class="btn ghost">Telefon bilan ko‘rish</button>
         </div>
       </div>
 
