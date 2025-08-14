@@ -22,6 +22,18 @@ function fmtDate(d){
   return dt.toLocaleDateString('uz-UZ');
 }
 function sanitizePhone(v){
+  v = (v||'').replace(/[^\\d+]/g,'');
+  if(v && !v.startsWith('+')) v = '+998' + v;
+  return v;
+}
+document.querySelector('#viewByPhoneBtn').addEventListener('click', () => {
+  const p = sanitizePhone(document.querySelector('#phoneLookup').value.trim());
+  if(!p) return;
+  const c = db.clients.find(x => sanitizePhone(x.phone) === p);
+  if(!c) return alert('Bu telefon raqami bo‘yicha mijoz topilmadi.');
+  openClientDetail(c.id); // detail modalini ochamiz (pastda read-only bo‘ladi)
+});
+function sanitizePhone(v){
   v = (v||'').replace(/[^\d+]/g,'');
   if(v && !v.startsWith('+')) v = '+998' + v;
   return v;
@@ -43,8 +55,29 @@ function computeTotals(){
     const debt = sum(c.transactions.filter(t=>t.type==='qarz').map(t=>Number(t.amount)));
     const paid = sum(c.transactions.filter(t=>t.type==='tolov').map(t=>Number(t.amount)));
     totalDebt += debt; totalPaid += paid;
+    // ... jadval qatorini yasagan joyda:
+const delBtn = frag.querySelector('[data-remove]');
+if(isLocked){
+  delBtn.remove(); // qulflanganda o'chirish bo'lmaydi
+} else {
+  delBtn.addEventListener('click', () => removeClient(c.id));
+}
+
+// ... render() oxirida:
+if(isLocked){
+  document.querySelector('#newClientBtn').style.display = 'none';
+  document.querySelector('#exportBtn').style.display    = 'none';
+  document.querySelector('label.btn.file')?.classList.add('admin-only');
+} else {
+  document.querySelector('#newClientBtn').style.display = 'inline-block';
+  document.querySelector('#exportBtn').style.display    = 'inline-block';
+  document.querySelector('label.btn.file')?.classList.remove('admin-only');
+  document.querySelector('#addDebtBtn').style.display = isLocked ? 'none' : 'inline-block';
+document.querySelector('#addPayBtn').style.display  = isLocked ? 'none' : 'inline-block';
+}
   }
   return { totalDebt, totalPaid, totalLeft: Math.max(totalDebt - totalPaid, 0) };
+  if(isLocked) return alert('Admin rejimida emas.');
 }
 
 function render(){
@@ -93,6 +126,7 @@ $('#newClientBtn').addEventListener('click', () => openClientForm());
 $('#search').addEventListener('input', render);
 
 function openClientForm(id=null){
+  if(isLocked) return alert('Admin rejimida emas.');
   const modal = $('#clientModal');
   const form = $('#clientForm');
   form.reset();
@@ -213,6 +247,55 @@ $('#txnForm').addEventListener('submit', e => {
 });
 
 // ---------- Export / Import ----------
+const pinKey  = 'nasiya-crm-pin';
+const lockKey = 'nasiya-crm-locked';
+let isLocked = JSON.parse(localStorage.getItem(lockKey) ?? 'true'); // default: qulflangan
+
+function updateLockUI(){
+  document.body.classList.toggle('locked', isLocked);
+  document.querySelector('#lockState').textContent = isLocked ? '🔒 Qulf' : '🔓 Admin';
+}
+updateLockUI();
+
+// SHA-256 hash (PIN’ni hashlab saqlaymiz)
+async function sha256(str){
+  const enc = new TextEncoder().encode(str);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function checkPin(pin){
+  const saved = localStorage.getItem(pinKey);
+  if(!saved) return false;
+  return (await sha256(pin)) === saved;
+}
+async function setPin(pin){
+  localStorage.setItem(pinKey, await sha256(pin));
+}
+
+// Qulf tugmasi
+document.querySelector('#lockBtn').addEventListener('click', async () => {
+  if(isLocked){
+    const saved = localStorage.getItem(pinKey);
+    if(!saved){
+      const p1 = prompt('Yangi ADMIN PIN kiriting (kamida 4 raqam):');
+      if(!p1 || p1.length < 4) return alert('Kamida 4 raqam bo‘lsin.');
+      const p2 = prompt('PINni tasdiqlang:');
+      if(p1 !== p2) return alert('PIN mos kelmadi.');
+      await setPin(p1);
+      isLocked = false;
+    } else {
+      const pin = prompt('ADMIN PIN:');
+      if(!pin) return;
+      if(!(await checkPin(pin))) return alert('Noto‘g‘ri PIN.');
+      isLocked = false;
+    }
+  } else {
+    isLocked = true;
+  }
+  localStorage.setItem(lockKey, JSON.stringify(isLocked));
+  updateLockUI();
+  render();
+});
 $('#exportBtn').addEventListener('click', () => {
   const blob = new Blob([JSON.stringify(db, null, 2)], {type:'application/json'});
   const a = document.createElement('a');
