@@ -1,147 +1,55 @@
-body {
-  background: #0e1116;
-  color: #e6eefc;
-  font-family: system-ui, sans-serif;
-  margin: 0;
-  padding: 0;
+:root{
+  --bg:#0e1116;--panel:#151a22;--border:#232936;--text:#e6eefc;--muted:#b6c3d6;
+  --accent:#22c55e;--red:#ef4444;--cyan:#06b6d4;--green:#22c55e;
 }
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;}
+.topbar{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:12px;border-bottom:1px solid var(--border)}
+h1{font-size:18px;margin:0}.accent{color:#8aff9c}
+.container{padding:12px}
 
-header {
-  padding: 10px;
-  background: #151a22;
-}
+.cards{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:12px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center}
+.card.small{min-width:140px}
+.card-title{font-size:12px;color:#dbe7ff}
+.card-value{font-size:22px;color:#fff}
+.card.red{box-shadow:inset 0 0 0 1px rgba(239,68,68,.3)}
+.card.cyan{box-shadow:inset 0 0 0 1px rgba(6,182,212,.3)}
+.card.green{box-shadow:inset 0 0 0 1px rgba(34,197,94,.35)}
 
-h1 { margin: 0; font-size: 18px; }
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:12px}
+.panel-header{display:flex;justify-content:space-between;align-items:center;padding:12px;border-bottom:1px solid var(--border)}
+.panel-actions{display:flex;gap:8px;flex-wrap:wrap}
 
-.stats {
-  display: flex;
-  gap: 15px;
-  margin-top: 5px;
-}
+.table-wrap{overflow:auto}
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{padding:10px;border-bottom:1px solid var(--border);color:#fff}
 
-.stat span { font-weight: bold; color: #fff; }
+.badge{padding:3px 8px;border-radius:999px;background:#243042;color:#fff;border:1px solid var(--border);font-size:12px}
+.badge.debt{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4)}
+.badge.pay{background:rgba(6,182,212,.15);border-color:rgba(6,182,212,.4)}
 
-.controls {
-  margin: 10px;
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
+.btn{padding:8px 12px;border-radius:8px;border:0;background:var(--accent);color:#000;font-weight:600}
+.btn.ghost{background:#202735;border:1px solid var(--border);color:#fff}
+.btn.warn{background:#3a1f1f;border:1px solid rgba(239,68,68,.5);color:#fff}
+.chip{padding:4px 10px;border-radius:999px;background:#243042;border:1px solid var(--border);color:#fff}
 
-button {
-  background: #22c55e;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 6px;
-}
+.input{background:#0f1722;border:1px solid var(--border);color:#fff;padding:8px 10px;border-radius:8px}
+.input::placeholder{color:#9fb0c9}
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #151a22;
-}
+.modal{border:0}
+.modal .modal-content{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px;min-width:300px;color:#e6eefc}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.icon-btn{background:#243042;border:1px solid var(--border);color:#fff;border-radius:8px;padding:4px 8px}
+.modal-footer{display:flex;gap:8px;align-items:center;margin-top:10px}
 
-th, td {
-  border: 1px solid #232936;
-  padding: 6px;
-}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.field span{display:block;margin-bottom:6px;color:#cfe2ff}
+.spacer{flex:1}
+.muted{color:var(--muted)}
 
-.card {
-  background: #1d2430;
-  padding: 10px;
-  border-radius: 8px;
-  text-align: center;
-}
-
-.card strong {
-  display: block;
-  font-size: 16px;
-  margin-top: 4px;
-  color: white;
-}
-
-dialog {
-  background: #151a22;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 20px;
-}
-
-input, select, textarea {
-  width: 100%;
-  padding: 5px;
-  border-radius: 4px;
-  border: 1px solid #444;
-  background: #1d2430;
-  color: white;
-}
-/* ===== MATNLARNI OQ QILISH (PATCH) ===== */
-
-/* Umumiy matn */
-body { color: #e6eefc !important; }
-
-/* Kartochkalar ichidagi sarlavha va summa */
-.card-title { color: #cfe2ff !important; }
-.card-value { color: #ffffff !important; }
-
-/* Jami / Qarz / To‘lov / Qoldiq ko‘rsatkichlari */
-#totalDebt, #totalPaid, #totalLeft { color: #ffffff !important; }
-
-/* Jadval matnlari */
-.table th, .table td { color: #e6eefc !important; }
-
-/* Miqdorlar (jadval va modal ichida) */
-.amount, .amount.debt, .amount.pay { color: #ffffff !important; }
-
-/* Badge / Chip ichidagi yozuvlar */
-.badge, .chip { color: #e6eefc !important; }
-
-/* Modal oynalar matnlari */
-.modal .modal-content { color: #e6eefc !important; }
-
-/* Kichik izohlar (telefon raqami va h.k.) */
-.muted { color: #c7d2e1 !important; }
-
-/* Kirish maydonlari ichidagi matn va placeholder */
-.input, input, textarea, select { color: #e6eefc !important; }
-.input::placeholder, input::placeholder, textarea::placeholder { color: #9fb0c9 !important; }
-/* ==== MATNLARNI OQ QILISH (PATCH) — dizaynni buzmaydi ==== */
-
-/* Umumiy matnlar */
-body, h1, h2, h3, h4, h5, h6, p, span, div, a, li, label {
+/* OQ MATN garantiya (har joyda) */
+body, .card-title, .card-value, .table th, .table td, .badge, .chip, .btn, .input, .modal .modal-content {
   color: #ffffff !important;
 }
-
-/* Kartochka yozuvlari */
-.card-title { color: #dbe7ff !important; }
-.card-value { color: #ffffff !important; }
-#totalDebt, #totalPaid, #totalLeft { color: #ffffff !important; }
-
-/* Jadval va hujayralar */
-.table th, .table td, table th, table td {
-  color: #ffffff !important;
-}
-
-/* Miqdorlar (jadval va modal) */
-.amount, .amount.debt, .amount.pay {
-  color: #ffffff !important;
-}
-
-/* Badge/Chip/tugma ichidagi matn */
-.badge, .chip, .btn, button {
-  color: #ffffff !important;
-}
-
-/* Modal oynalar matnlari */
-.modal .modal-content, .modal .modal-header, .modal .modal-footer {
-  color: #e6eefc !important;
-}
-
-/* Kichik izohlar (telefon va h.k.) */
-.muted { color: #c8d5f0 !important; }
-
-/* Input/textarea ichidagi matnlar va placeholder */
-.input, input, textarea, select { color: #ffffff !important; }
-.input::placeholder, input::placeholder, textarea::placeholder { color: #b5c4de !important; }
