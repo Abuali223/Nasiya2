@@ -1,71 +1,79 @@
-:root {
-  --bg: #0e1116;
-  --text: #fff;
-  --accent: #22c55e;
-  --border: #232936;
-}
 body {
-  margin: 0;
+  background: #0e1116;
+  color: #e6eefc;
   font-family: system-ui, sans-serif;
-  background: var(--bg);
-  color: var(--text);
+  margin: 0;
+  padding: 0;
 }
-.topbar {
+
+header {
+  padding: 10px;
+  background: #151a22;
+}
+
+h1 { margin: 0; font-size: 18px; }
+
+.stats {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: space-between;
-  padding: 10px;
-  border-bottom: 1px solid var(--border);
+  gap: 15px;
+  margin-top: 5px;
 }
-.container {
-  padding: 10px;
-}
-.cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+
+.stat span { font-weight: bold; color: #fff; }
+
+.controls {
+  margin: 10px;
+  display: flex;
   gap: 10px;
+  flex-wrap: wrap;
 }
-.card {
-  background: #151a22;
-  border-radius: 10px;
-  padding: 12px;
-  text-align: center;
+
+button {
+  background: #22c55e;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
 }
-.panel {
-  background: #151a22;
-  border-radius: 10px;
-  margin-top: 15px;
-}
-.table-wrap {
-  overflow-x: auto;
-}
-.table {
+
+table {
   width: 100%;
   border-collapse: collapse;
+  background: #151a22;
 }
-.table th, .table td {
-  padding: 8px;
-  border-bottom: 1px solid var(--border);
-}
-.btn {
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: var(--accent);
-  color: #000;
-  font-weight: bold;
-}
-@media (max-width: 600px) {
-  .topbar h1 {
-    font-size: 18px;
-  }
-  .table th, .table td {
-    font-size: 13px;
-    padding: 6px;
-  }
-}/* Summalarni oq rangda ko'rsatish */
-.card-value { color: #fff !important; }
-.amount { color: #fff !important; }
 
-/* Agar oldin .amount.debt / .amount.pay ranglari bor bo'lsa, ularni ham oq qilamiz */
-.amount.debt, .amount.pay { color: #fff !important; }
+th, td {
+  border: 1px solid #232936;
+  padding: 6px;
+}
+
+.card {
+  background: #1d2430;
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.card strong {
+  display: block;
+  font-size: 16px;
+  margin-top: 4px;
+  color: white;
+}
+
+dialog {
+  background: #151a22;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+input, select, textarea {
+  width: 100%;
+  padding: 5px;
+  border-radius: 4px;
+  border: 1px solid #444;
+  background: #1d2430;
+  color: white;
+}
