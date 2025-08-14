@@ -144,17 +144,25 @@
           <div class="card-title">Qarz</div>
           <div class="card-value" id="detailDebt">0</div>
         </div>
-        <div class="card small">
-          <div class="card-title">Tölov</div>
-          <div class="card-value" id="detailPaid">0</div>
-        </div>
-        <div class="card small focus">
-          <div class="card-title">Qoldi</div>
-          <div class="card-value" id="detailLeft">0</div>
-        </div>
-        <div class="spacer"></div>
-        <button id="addTxnBtn" class="btn">+ Qarz/Tölov</button>
-      </section>
+        <section class="cards tight">
+  <div class="card small">
+    <div class="card-title">Qarz</div>
+    <div class="card-value" id="detailDebt">0</div>
+  </div>
+  <div class="card small">
+    <div class="card-title">Tölov</div>
+    <div class="card-value" id="detailPaid">0</div>
+  </div>
+  <div class="card small focus">
+    <div class="card-title">Qoldi</div>
+    <div class="card-value" id="detailLeft">0</div>
+  </div>
+
+  <div class="spacer"></div>
+  <!-- Alohida tugmalar -->
+  <button id="addDebtBtn" class="btn debt">+ Qarz</button>
+  <button id="addPayBtn"  class="btn pay">+ Tölov</button>
+</section>
       <div class="table-wrap">
         <table class="table" id="txnTable" aria-label="Tranzaksiyalar">
           <thead>
