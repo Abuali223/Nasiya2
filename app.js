@@ -1,315 +1,168 @@
-// Alilazer • Nasiya & Tölovlar — Parolsiz (doimiy admin) lokal versiya
-const $  = s => document.querySelector(s);
+const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 
-const storeKey = 'nasiya-crm-v1';
-
 let db = load();
-let deferredInstallPrompt = null;
 let currentClientId = null;
 
-// ========== Utils ==========
 function uid(){ return Math.random().toString(36).slice(2,10) + Date.now().toString(36); }
-function money(n){
-  const num = Number(n||0);
-  return num.toLocaleString('uz-UZ', { style:'currency', currency:'UZS', maximumFractionDigits:0 });
-}
+function money(n){ return Number(n||0).toLocaleString('uz-UZ',{style:'currency',currency:'UZS',maximumFractionDigits:0}); }
 function sum(arr){ return arr.reduce((a,b)=>a+b,0); }
-function fmtDate(d){
-  if(!d) return '';
-  const dt = new Date(d);
-  if(!isFinite(dt)) return '';
-  return dt.toLocaleDateString('uz-UZ');
-}
+function fmtDate(d){ if(!d) return ''; return new Date(d).toLocaleDateString('uz-UZ'); }
 function nowISO(){ return new Date().toISOString().slice(0,10); }
 
-// ✅ Telefonni ishonchli formatlash
 function sanitizePhone(v){
-  v = (v || '').replace(/\D/g, '');         // faqat raqamlar
-  if (!v) return '';                         // bo'sh bo'lsa bo'sh
-  if (v.startsWith('998') && v.length === 12) return '+' + v;     // 998*********
-  if (v.startsWith('0')   && v.length >= 10) return '+998' + v.slice(1); // 0*********
-  if (v.length === 9)                        return '+998' + v;   // 9 xonali (90/91...)
-  if (v.length === 12)                       return '+' + v;      // +XXXXXXXXXXXX dan +
-  // boshqa holat — noto'g'ri
-  return '';
+  v = v.replace(/[^0-9]/g,'');
+  if(v.startsWith('998')) v = '+'+v;
+  else if(v.length===9) v = '+998'+v;
+  return v;
 }
 
 function load(){
-  try{ return JSON.parse(localStorage.getItem(storeKey)) || { clients: [] }; }
-  catch{ return { clients: [] }; }
+  try{ return JSON.parse(localStorage.getItem('alilazer-db')) || {clients:[]}; }
+  catch{ return {clients:[]}; }
 }
+
 function save(){
-  localStorage.setItem(storeKey, JSON.stringify(db));
+  localStorage.setItem('alilazer-db', JSON.stringify(db));
   render();
 }
 
-// ========== Doimiy ADMIN rejimi ==========
-function updateLockUI(){
-  document.body.classList.remove('locked');
-  $$('.admin-only').forEach(el => el.style.display = '');
-  $('#lockState') && ($('#lockState').textContent = '🔓 Admin');
-}
-updateLockUI();
-
-$('#lockBtn')?.addEventListener('click', () => {
-  alert('Bu versiyada qulflash o‘chirib qo‘yilgan (doimiy admin).');
-});
-
-// ========== Rendering ==========
 function computeTotals(){
-  let totalDebt = 0, totalPaid = 0;
+  let totalDebt=0,totalPaid=0;
   for(const c of db.clients){
-    const debt = sum(c.transactions.filter(t=>t.type==='qarz').map(t=>Number(t.amount)));
-    const paid = sum(c.transactions.filter(t=>t.type==='tolov').map(t=>Number(t.amount)));
+    const debt = sum(c.transactions.filter(t=>t.type==='qarz').map(t=>+t.amount));
+    const paid = sum(c.transactions.filter(t=>t.type==='tolov').map(t=>+t.amount));
     totalDebt += debt; totalPaid += paid;
   }
-  return { totalDebt, totalPaid, totalLeft: Math.max(totalDebt - totalPaid, 0) };
+  return { totalDebt, totalPaid, totalLeft: Math.max(totalDebt-totalPaid,0) };
 }
 
 function render(){
-  const { totalDebt, totalPaid, totalLeft } = computeTotals();
+  const {totalDebt,totalPaid,totalLeft} = computeTotals();
   $('#totalDebt').textContent = money(totalDebt);
   $('#totalPaid').textContent = money(totalPaid);
   $('#totalLeft').textContent = money(totalLeft);
 
   const tbody = $('#clientTable tbody');
-  if(!tbody) return;
   tbody.innerHTML = '';
-
-  const q = ($('#search')?.value || '').toLowerCase();
-
-  db.clients
-    .map(c => ({
-      ...c,
-      debt: sum(c.transactions.filter(t=>t.type==='qarz').map(t=>+t.amount)),
-      paid: sum(c.transactions.filter(t=>t.type==='tolov').map(t=>+t.amount))
-    }))
-    .filter(c => {
-      const phone = (c.phone||'').toLowerCase();
-      const name  = (c.name ||'').toLowerCase();
-      return !q || name.includes(q) || phone.includes(q);
-    })
-    .sort((a,b)=> (b.createdAt||'').localeCompare(a.createdAt||''))
-    .forEach((c, i) => {
+  const q = $('#search').value.toLowerCase();
+  db.clients.forEach((c,i)=>{
+    const debt = sum(c.transactions.filter(t=>t.type==='qarz').map(t=>+t.amount));
+    const paid = sum(c.transactions.filter(t=>t.type==='tolov').map(t=>+t.amount));
+    const left = Math.max(debt-paid,0);
+    if(!q || c.name.toLowerCase().includes(q) || c.phone.includes(q)){
       const tr = document.createElement('tr');
-      const left = Math.max(c.debt - c.paid, 0);
       tr.innerHTML = `
         <td>${i+1}</td>
-        <td>${c.name||''}</td>
-        <td>${c.phone||''}</td>
-        <td class="amount">${money(c.debt)}</td>
-        <td class="amount">${money(c.paid)}</td>
-        <td class="amount"><strong>${money(left)}</strong></td>
-        <td></td>
+        <td>${c.name}</td>
+        <td>${c.phone || '—'}</td>
+        <td>${money(debt)}</td>
+        <td>${money(paid)}</td>
+        <td>${money(left)}</td>
+        <td><button onclick="openClientDetail('${c.id}')">Ko‘rish</button></td>
       `;
-      const cell = tr.lastElementChild;
-
-      const viewBtn = document.createElement('button');
-      viewBtn.className = 'chip';
-      viewBtn.textContent = 'Ko‘rish';
-      viewBtn.addEventListener('click', () => openClientDetail(c.id));
-      cell.appendChild(viewBtn);
-
-      const delBtn = document.createElement('button');
-      delBtn.className = 'chip warn';
-      delBtn.textContent = 'O‘chirish';
-      delBtn.addEventListener('click', () => removeClient(c.id));
-      cell.appendChild(delBtn);
-
       tbody.appendChild(tr);
-    });
+    }
+  });
 }
 
-// ========== Clients ==========
-$('#newClientBtn')?.addEventListener('click', () => openClientForm());
-$('#search')?.addEventListener('input', render);
-
-// Telefon bilan ko‘rish — lokal baza ichidan
-$('#viewByPhoneBtn')?.addEventListener('click', () => {
-  const raw = $('#phoneLookup').value?.trim();
-  const p = sanitizePhone(raw);
-  if(raw && !p) return alert('Telefon raqami noto‘g‘ri formatda.');
-  const c = db.clients.find(x => sanitizePhone(x.phone) === p);
-  if(!c) return alert('Bu telefon raqami bo‘yicha mijoz topilmadi.');
-  openClientDetail(c.id);
-});
+$('#newClientBtn').onclick = ()=>openClientForm();
+$('#search').oninput = render;
 
 function openClientForm(id=null){
-  const modal = $('#clientModal');
-  const form  = $('#clientForm');
+  const form = $('#clientForm');
   form.reset();
-  $('#deleteClientBtn').hidden = true;
   form.dataset.id = id || '';
-  $('#modalTitle').textContent = id ? 'Mijozni tahrirlash' : 'Yangi mijoz';
-
   if(id){
     const c = db.clients.find(x=>x.id===id);
-    if(!c) return;
-    $('#c_name').value  = c.name  || '';
-    $('#c_phone').value = c.phone || '';
-    $('#c_note').value  = c.note  || '';
-    $('#deleteClientBtn').hidden = false;
-    $('#deleteClientBtn').onclick = () => {
-      if(confirm('Ushbu mijoz o‘chirilsinmi?')) { removeClient(id); modal.close(); }
-    };
+    $('#c_name').value = c.name;
+    $('#c_phone').value = c.phone;
+    $('#c_note').value = c.note;
   }
-  modal.showModal();
+  $('#clientModal').showModal();
 }
 
-$$('[data-close]').forEach(btn => btn.addEventListener('click', e => e.target.closest('dialog').close()));
+$$('[data-close]').forEach(btn=>btn.onclick=e=>e.target.closest('dialog').close());
 
-$('#clientForm')?.addEventListener('submit', e => {
+$('#clientForm').onsubmit = e=>{
   e.preventDefault();
-  const id    = e.target.dataset.id || null;
-  const name  = $('#c_name').value.trim();
-
-  const rawPhone = $('#c_phone').value.trim();
-  const phone    = sanitizePhone(rawPhone);
-  if(rawPhone && !phone) return alert('Telefon raqami noto‘g‘ri. Misol: +998901234567');
-
-  const note  = $('#c_note').value.trim();
-  if(!name) return;
-
+  const id = e.target.dataset.id;
+  const name = $('#c_name').value.trim();
+  let phone = $('#c_phone').value.trim();
+  phone = sanitizePhone(phone);
+  const note = $('#c_note').value.trim();
   if(id){
     const c = db.clients.find(x=>x.id===id);
-    if(!c) return;
-    c.name = name; c.phone = phone; c.note = note;
-  } else {
-    db.clients.push({ id: uid(), name, phone, note, createdAt: new Date().toISOString(), transactions: [] });
+    c.name=name; c.phone=phone; c.note=note;
+  }else{
+    db.clients.push({id:uid(),name,phone,note,createdAt:nowISO(),transactions:[]});
   }
   save();
   $('#clientModal').close();
-});
-
-function removeClient(id){
-  if(!confirm('Mijoz va barcha tranzaksiyalari o‘chirilsinmi?')) return;
-  const i = db.clients.findIndex(x=>x.id===id);
-  if(i>=0){ db.clients.splice(i,1); save(); }
 }
 
-// ========== Client Detail & Transactions ==========
 function openClientDetail(id){
-  const c = db.clients.find(x=>x.id===id);
-  if(!c) return;
   currentClientId = id;
-  $('#detailName').textContent  = c.name  || '';
-  $('#detailPhone').textContent = c.phone || '';
+  const c = db.clients.find(x=>x.id===id);
+  $('#detailName').textContent = c.name;
+  $('#detailPhone').textContent = c.phone;
   renderDetail();
   $('#clientDetail').showModal();
 }
 
 function renderDetail(){
   const c = db.clients.find(x=>x.id===currentClientId);
-  if(!c) return;
-
   const debt = sum(c.transactions.filter(t=>t.type==='qarz').map(t=>+t.amount));
   const paid = sum(c.transactions.filter(t=>t.type==='tolov').map(t=>+t.amount));
-  const left = Math.max(debt - paid, 0);
-
+  const left = Math.max(debt-paid,0);
   $('#detailDebt').textContent = money(debt);
   $('#detailPaid').textContent = money(paid);
   $('#detailLeft').textContent = money(left);
 
   const tbody = $('#txnTable tbody');
   tbody.innerHTML = '';
-  c.transactions
-    .slice()
-    .sort((a,b)=> (b.date||'').localeCompare(a.date||''))
-    .forEach((t, i) => {
-      const isDebt = t.type === 'qarz';
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
+  c.transactions.forEach((t,i)=>{
+    tbody.innerHTML += `
+      <tr>
         <td>${i+1}</td>
         <td>${fmtDate(t.date)}</td>
-        <td><span class="badge ${isDebt ? 'debt' : 'pay'}">${isDebt ? 'Qarz (➕)' : 'Tölov (➖)'}</span></td>
-        <td class="amount">${money(t.amount)}</td>
-        <td>${t.note || ''}</td>
-        <td><button class="chip warn" data-del="${t.id}">O‘chirish</button></td>
-      `;
-      tr.querySelector('[data-del]')?.addEventListener('click', () => {
-        if(confirm('Tranzaksiyani o‘chirasizmi?')){
-          const idx = c.transactions.findIndex(x=>x.id===t.id);
-          if(idx>=0){ c.transactions.splice(idx,1); save(); renderDetail(); }
-        }
-      });
-      tbody.appendChild(tr);
-    });
-}
-
-$('#addDebtBtn')?.addEventListener('click', () => {
-  $('#txnForm').reset();
-  $('#t_type').value = 'qarz';
-  $('#t_date').value = nowISO();
-  $('#txnModal').showModal();
-});
-$('#addPayBtn')?.addEventListener('click', () => {
-  $('#txnForm').reset();
-  $('#t_type').value = 'tolov';
-  $('#t_date').value = nowISO();
-  $('#txnModal').showModal();
-});
-
-$('#txnForm')?.addEventListener('submit', e => {
-  e.preventDefault();
-  const c = db.clients.find(x=>x.id===currentClientId);
-  if(!c) return;
-  const type   = $('#t_type').value;
-  const amount = Number($('#t_amount').value);
-  const date   = $('#t_date').value || nowISO();
-  const note   = $('#t_note').value.trim();
-  if(!amount || amount <= 0) return;
-
-  c.transactions.push({ id: uid(), type, amount, date, note });
-  save();
-  $('#txnModal').close();
-  renderDetail();
-});
-
-// ========== Export / Import ==========
-$('#exportBtn')?.addEventListener('click', () => {
-  const blob = new Blob([JSON.stringify(db, null, 2)], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'alilazer-data.json';
-  a.click();
-});
-
-$('#importFile')?.addEventListener('change', async e => {
-  const file = e.target.files[0];
-  if(!file) return;
-  try{
-    const text = await file.text();
-    const data = JSON.parse(text);
-    if(!data || !Array.isArray(data.clients)) throw new Error('Format xato');
-    db = data; save();
-    alert('Import muvaffaqiyatli!');
-  }catch(err){
-    alert('Importda xatolik: ' + err.message);
-  } finally {
-    e.target.value = '';
-  }
-});
-
-// ========== PWA install / SW (ixtiyoriy) ==========
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredInstallPrompt = e;
-});
-$('#installBtn')?.addEventListener('click', async () => {
-  if(deferredInstallPrompt){
-    deferredInstallPrompt.prompt();
-    await deferredInstallPrompt.userChoice;
-    deferredInstallPrompt = null;
-  } else {
-    alert('Uy ekraniga qo‘shish oynasi paydo bo‘lganda shu tugmani bosing.');
-  }
-});
-if('serviceWorker' in navigator){
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+        <td>${t.type==='qarz'?'Qarz':'To‘lov'}</td>
+        <td>${money(t.amount)}</td>
+        <td>${t.note||''}</td>
+        <td><button onclick="delTxn('${t.id}')">O‘chirish</button></td>
+      </tr>
+    `;
   });
 }
 
-// First paint
+$('#addDebtBtn').onclick = ()=>openTxnForm('qarz');
+$('#addPayBtn').onclick = ()=>openTxnForm('tolov');
+
+function openTxnForm(type){
+  $('#txnForm').reset();
+  $('#t_type').value = type;
+  $('#t_date').value = nowISO();
+  $('#txnModal').showModal();
+}
+
+$('#txnForm').onsubmit = e=>{
+  e.preventDefault();
+  const c = db.clients.find(x=>x.id===currentClientId);
+  const type = $('#t_type').value;
+  const amount = Number($('#t_amount').value);
+  const date = $('#t_date').value;
+  const note = $('#t_note').value;
+  c.transactions.push({id:uid(),type,amount,date,note});
+  save();
+  $('#txnModal').close();
+  renderDetail();
+}
+
+function delTxn(id){
+  const c = db.clients.find(x=>x.id===currentClientId);
+  c.transactions = c.transactions.filter(t=>t.id!==id);
+  save();
+  renderDetail();
+}
+
 render();
